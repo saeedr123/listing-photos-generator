@@ -1,0 +1,178 @@
+{
+  "templateId": "feature-close-up",
+  "templateVersion": 1,
+  "canvasWidthPx": 3000,
+  "canvasHeightPx": 2000,
+  "colourProfile": "sRGB",
+  "background": "#F9EDEA",
+  "pattern": "subtle-dots",
+  "rects": [],
+  "texts": [
+    {
+      "id": "title",
+      "text": "Plan Every Booking and Itinerary",
+      "x": 180,
+      "y": 60,
+      "w": 2640,
+      "h": 180,
+      "fontFamily": "Georgia, 'Times New Roman', serif",
+      "fontSizePx": 96,
+      "fontWeight": 700,
+      "fontStyle": "italic",
+      "fill": "#2B2B2B",
+      "align": "center",
+      "maxLines": 2,
+      "lines": [
+        "Plan Every Booking and Itinerary"
+      ]
+    },
+    {
+      "id": "subtitle",
+      "text": "Flights, stays, and activities in one place",
+      "x": 180,
+      "y": 250,
+      "w": 2640,
+      "h": 110,
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSizePx": 34,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "fill": "#2B2B2B",
+      "align": "center",
+      "maxLines": 1,
+      "lines": [
+        "Flights, stays, and activities in one place"
+      ]
+    },
+    {
+      "id": "callout-1",
+      "text": "Day itinerary in one view",
+      "x": 2100,
+      "y": 440,
+      "w": 780,
+      "h": 320,
+      "fontFamily": "Georgia, 'Times New Roman', serif",
+      "fontSizePx": 32,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "fill": "#2B2B2B",
+      "align": "left",
+      "maxLines": 4,
+      "lines": [
+        "Day itinerary in one view"
+      ]
+    },
+    {
+      "id": "callout-2",
+      "text": "Flights, stays, and activities together",
+      "x": 2100,
+      "y": 800,
+      "w": 780,
+      "h": 320,
+      "fontFamily": "Georgia, 'Times New Roman', serif",
+      "fontSizePx": 32,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "fill": "#2B2B2B",
+      "align": "left",
+      "maxLines": 4,
+      "lines": [
+        "Flights, stays, and activities together"
+      ]
+    },
+    {
+      "id": "callout-3",
+      "text": "Event schedules that link to the plan",
+      "x": 2100,
+      "y": 1160,
+      "w": 780,
+      "h": 320,
+      "fontFamily": "Georgia, 'Times New Roman', serif",
+      "fontSizePx": 32,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "fill": "#2B2B2B",
+      "align": "left",
+      "maxLines": 4,
+      "lines": [
+        "Event schedules that link to the plan"
+      ]
+    },
+    {
+      "id": "pill-1",
+      "text": "12 Interactive Tabs",
+      "x": 180,
+      "y": 1800,
+      "w": 1260,
+      "h": 120,
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSizePx": 28,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "fill": "#2B2B2B",
+      "align": "left",
+      "maxLines": 1,
+      "lines": [
+        "12 Interactive Tabs"
+      ]
+    },
+    {
+      "id": "pill-2",
+      "text": "Google Sheets Only",
+      "x": 1560,
+      "y": 1800,
+      "w": 1260,
+      "h": 120,
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSizePx": 28,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "fill": "#2B2B2B",
+      "align": "left",
+      "maxLines": 1,
+      "lines": [
+        "Google Sheets Only"
+      ]
+    }
+  ],
+  "images": [
+    {
+      "id": "feature-product",
+      "kind": "product-render",
+      "x": 120,
+      "y": 380,
+      "w": 1920,
+      "h": 1380,
+      "sourceWidthPx": 3000,
+      "sourceHeightPx": 2000,
+      "isSample": true,
+      "label": "Seller real product render",
+      "sheetLines": [
+        "Start Here and Guide",
+        "Home Dashboard",
+        "Bride Profile and Cheat Sheet",
+        "Master To-Do List",
+        "Day-Of Status Card",
+        "Master Budget and Split Calculator",
+        "Transaction Log",
+        "Venue and Airbnb Comparison",
+        "Itinerary and Event Schedules",
+        "MOH Speech Builder",
+        "Mobile Quick-Expense Log",
+        "Printable Bridal Suite Kit"
+      ],
+      "mockupKind": "tablet-alone",
+      "mockupScreens": [
+        {
+          "h": 560,
+          "w": 700,
+          "x": 150,
+          "y": 110,
+          "landscape": true
+        }
+      ]
+    }
+  ],
+  "warnings": [],
+  "quality": 92
+}
