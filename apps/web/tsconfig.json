@@ -1,0 +1,66 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "incremental": true,
+    "jsx": "preserve",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@listing-photos-generator/shared": [
+        "../../packages/shared/src/index.ts"
+      ],
+      "@listing-photos-generator/auth": [
+        "../../packages/auth/src/index.ts"
+      ],
+      "@listing-photos-generator/builder": [
+        "../../packages/builder/src/index.ts"
+      ],
+      "@listing-photos-generator/builder/browser": [
+        "../../packages/builder/src/browser.ts"
+      ],
+      "@listing-photos-generator/admin": [
+        "../../packages/admin/src/index.ts"
+      ],
+      "@listing-photos-generator/admin/browser": [
+        "../../packages/admin/src/browser.ts"
+      ],
+      "@listing-photos-generator/ai": [
+        "../../packages/ai/src/index.ts"
+      ],
+      "@listing-photos-generator/ai/browser": [
+        "../../packages/ai/src/browser.ts"
+      ]
+    },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2017",
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true
+  },
+  "exclude": [
+    "node_modules"
+  ],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ]
+}
