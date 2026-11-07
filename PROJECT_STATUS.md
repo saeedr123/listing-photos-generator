@@ -1,8 +1,8 @@
 # Listing Photos Generator: Project Status
 
-## Status, 2026-11-05
+## Status, 2026-11-07
 
-Phase 1 is complete: research and planning docs only. No code is built. No live site change is made. No spending. No contact with real people. No GitHub push was made in Phase 1 docs work; the parent will push these docs and verify.
+Phase 2 is complete and pushed to GitHub: v1 core built and tested, 157 tests pass, 0 fail, full typecheck passes, next build passes, 17 routes all 200, all 234 tracked files on GitHub, verified by tree sha comparison. Phase 1 research and planning docs are below, kept for reference. No live site change is made. No spending. No contact with real people.
 
 Repository, already live: saeedr123/listing-photos-generator, public, owner saeedr123, created by Ali on 2026-11-04, with README.md, IDEA.md, and brainstorming files pushed, all status 201. Local project: ~/workspace/listing-studio/
 
@@ -58,7 +58,7 @@ Price, Stripe and VAT, AI provider, domain (on hold), hosting, legal wording, mo
 
 ## What is NOT built yet
 
-No code, no database migration, no live site, no Stripe integration, no AI provider integration, no eBay pack, no Amazon pack, no later platform pack, no auto publishing, no video generation, no multi language. Phase 2 code starts only after Ali approves Phase 1.
+Phase 2 v1 code is built (see Phase 2 sections below). Still not built: no database migration applied anywhere, no live site, no live database, no Stripe integration, no AI provider integration, no eBay pack, no Amazon pack, no later platform pack, no auto publishing, no video generation, no multi language. Admin routes are not gated behind the admin role yet, gate before any deployment.
 
 ## Phase 2 started, 2026-11-07
 
