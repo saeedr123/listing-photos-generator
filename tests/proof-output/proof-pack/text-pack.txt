@@ -1,0 +1,28 @@
+TITLE
+Maid of Honor Planner Google Sheets Wedding Planning Workbook 12 Tabs
+
+DESCRIPTION
+Maid of Honor Planner in Google Sheets. A 12 tab wedding planning workbook with a to-do list, budget and split calculator, itinerary and event schedules, speech builder, and mobile expense log. Instant download. Google Sheets only.
+
+TAGS
+1. maid of honor
+2. wedding planner
+3. google sheets
+4. bridal planner
+5. wedding planning
+6. bridesmaid gift
+7. wedding checklist
+8. bridal shower
+9. bachelorette
+10. wedding budget
+11. wedding organizer
+12. moh planner
+13. wedding binder
+
+PRE-PUBLISH CHECKLIST
+[ ] 1. Tab count matches the real sheet: 12 tabs
+[ ] 2. Price matches the product facts: USD 13.97 list, USD 9.78 launch (task supplied, reconfirm before published use)
+[ ] 3. Format matches the real product: Google Sheets only, not Excel
+[ ] 4. First image is landscape and keeps the product centred with a safe border
+[ ] 5. Images are JPG, 2000px on the shortest side, sRGB
+[ ] 6. Replace the sample render with the real sheet render before publishing
