@@ -1,0 +1,1 @@
+{"description":"Mockup Library core for Listing Photos Generator. Frames are built in house as SVG, licence records are kept with every frame.","engines":{"node":">=22"},"exports":{".":"./src/index.ts"},"main":"src/index.ts","name":"@listing-photos-generator/mockup-engine","private":true,"type":"module","version":"0.1.0"}
