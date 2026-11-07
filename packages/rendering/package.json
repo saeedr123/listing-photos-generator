@@ -1,0 +1,1 @@
+{"description":"Rendering abstraction for Listing Photos Generator. One rendering path feeds both preview and JPG export.","engines":{"node":">=22"},"exports":{".":"./src/index.ts"},"main":"src/index.ts","name":"@listing-photos-generator/rendering","private":true,"type":"module","version":"0.1.0"}
