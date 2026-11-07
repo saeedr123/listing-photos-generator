@@ -17,6 +17,7 @@ Ideas only, 2026-11-04. Nothing here is a decision, a price, or a build order. E
 
 ## Expansion ideas, Phase 2 or later, not v1
 - Shopify and Amazon listing formats, built on the same reconciliation and export engine.
+- Later platforms shortlist, added to the do list 2026-11-05, built later, in this order, rules to be verified from official sources before each is built: next after Amazon, Shopify, TikTok Shop, Facebook Marketplace and Instagram Shopping; then Walmart Marketplace, Google Shopping, Pinterest Shopping; then for Asia and Ali's audience, Shopee, Lazada, Daraz, plus WooCommerce as a store platform pack. Shopify and WooCommerce are own store product pages, TikTok Shop fits Ali's TikTok traffic, Facebook and Instagram are social commerce, Walmart and Google Shopping are large US marketplaces, Pinterest is vertical lifestyle discovery, Shopee, Lazada and Daraz are Asia and Pakistan region marketplaces.
 - Video storyboard for a listing video, not video generation in v1.
 - Multi language listings, gated by demand, same logic as Global Career Studio: English first, German, French, and Spanish only after demand is shown.
 - Share and review link for a draft listing pack, so a partner can check it before export.
