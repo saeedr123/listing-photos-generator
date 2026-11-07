@@ -1,0 +1,1020 @@
+// Listing Photos Generator, Prisma schema
+// Transcribed from docs/database-design.md (Phase 1, 2026-11-05).
+// Platform neutral: platform_id plus pack_version_id wherever a platform is
+// touched, never a column named for one platform only.
+// No price, tax rate, provider, or platform rule is hard coded here.
+// Edition values are to be confirmed by Ali; edition is required, with no
+// invented default. Mockup licence fields live on MockupVersion.
+// No live database connection is needed to validate this schema.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Users, accounts and auth
+
+model User {
+  id                String    @id @default(uuid()) @db.Uuid
+  email             String    @unique
+  name              String?
+  password_hash     String
+  role              String    @default("user")
+  edition           String
+  email_verified_at DateTime? @db.Timestamptz(6)
+  locale            String    @default("en")
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime  @updatedAt @db.Timestamptz(6)
+  deleted_at        DateTime? @db.Timestamptz(6)
+
+  auth_identities                       AuthIdentity[]
+  sessions                              Session[]
+  account_deletion_requests             AccountDeletionRequest[]
+  products                              Product[]
+  product_source_files                  ProductSourceFile[]
+  product_verified_facts                ProductVerifiedFact[]
+  listing_packs                         ListingPack[]
+  exports                               Export[]
+  share_links                           ShareLink[]
+  subscriptions                         Subscription[]
+  trials                                Trial[]
+  user_entitlements                     UserEntitlement[]
+  ai_credit_ledgers                     AICreditLedger[]
+  ai_usage_logs                         AIUsageLog[]
+  usage_daily_counts                    UsageDailyCount[]
+  system_logs                           SystemLog[]
+  admin_audit_logs                      AdminAuditLog[]
+  product_renders_crop_approved         ProductRender[]           @relation("ProductRenderCropApprover")
+  listing_pack_copy_versions_created    ListingPackCopyVersion[]  @relation("ListingPackCopyVersionCreatedBy")
+  reconciliation_check_items_overridden ReconciliationCheckItem[] @relation("ReconciliationCheckItemOverrideBy")
+  platform_pack_versions_published      PlatformPackVersion[]     @relation("PlatformPackVersionPublishedBy")
+  platform_pack_versions_created        PlatformPackVersion[]     @relation("PlatformPackVersionCreatedBy")
+  template_versions_published           TemplateVersion[]         @relation("TemplateVersionPublishedBy")
+  template_versions_created             TemplateVersion[]         @relation("TemplateVersionCreatedBy")
+  copy_prompt_versions_published        CopyPromptVersion[]       @relation("CopyPromptVersionPublishedBy")
+  copy_prompt_versions_created          CopyPromptVersion[]       @relation("CopyPromptVersionCreatedBy")
+  niche_pack_versions_published         NichePackVersion[]        @relation("NichePackVersionPublishedBy")
+  niche_pack_versions_created           NichePackVersion[]        @relation("NichePackVersionCreatedBy")
+  mockups_created                       Mockup[]                  @relation("MockupCreatedBy")
+  mockup_versions_published             MockupVersion[]           @relation("MockupVersionPublishedBy")
+  mockup_versions_created               MockupVersion[]           @relation("MockupVersionCreatedBy")
+  export_events_created                 ExportEvent[]             @relation("ExportEventCreatedBy")
+  user_entitlements_granted             UserEntitlement[]         @relation("UserEntitlementGrantedBy")
+
+  @@index([edition])
+  @@index([deleted_at])
+}
+
+model AuthIdentity {
+  id               String   @id @default(uuid()) @db.Uuid
+  user_id          String   @db.Uuid
+  provider         String
+  provider_user_id String?
+  provider_email   String?
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime @updatedAt @db.Timestamptz(6)
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@unique([provider, provider_user_id])
+  @@index([user_id])
+}
+
+model Session {
+  id                 String    @id @default(uuid()) @db.Uuid
+  user_id            String    @db.Uuid
+  session_token_hash String    @unique
+  expires_at         DateTime  @db.Timestamptz(6)
+  last_seen_at       DateTime? @db.Timestamptz(6)
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  revoked_at         DateTime? @db.Timestamptz(6)
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+  @@index([expires_at])
+}
+
+model AccountDeletionRequest {
+  id              String    @id @default(uuid()) @db.Uuid
+  user_id         String    @db.Uuid
+  requested_at    DateTime  @db.Timestamptz(6)
+  requested_by    String
+  reason          String?
+  status          String
+  soft_deleted_at DateTime? @db.Timestamptz(6)
+  hard_deleted_at DateTime? @db.Timestamptz(6)
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @updatedAt @db.Timestamptz(6)
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+  @@index([status])
+}
+
+// 2. Products, the seller's real product
+
+model Product {
+  id                 String    @id @default(uuid()) @db.Uuid
+  user_id            String    @db.Uuid
+  edition            String
+  name               String
+  product_type       String
+  format             String
+  price_amount_minor Int?
+  price_currency     String?
+  description_seller String?
+  status             String    @default("draft")
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime  @updatedAt @db.Timestamptz(6)
+  deleted_at         DateTime? @db.Timestamptz(6)
+
+  user           User                  @relation(fields: [user_id], references: [id])
+  source_files   ProductSourceFile[]
+  verified_facts ProductVerifiedFact[]
+  renders        ProductRender[]
+  listing_packs  ListingPack[]
+
+  @@index([user_id])
+  @@index([user_id, status])
+  @@index([deleted_at])
+}
+
+model ProductSourceFile {
+  id                  String    @id @default(uuid()) @db.Uuid
+  product_id          String    @db.Uuid
+  storage_key         String
+  file_name           String
+  file_type           String
+  file_size_bytes     Int
+  width_px            Int?
+  height_px           Int?
+  page_count          Int?
+  colour_profile      String?
+  source_kind         String
+  uploaded_by_user_id String    @db.Uuid
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at          DateTime? @db.Timestamptz(6)
+
+  product        Product               @relation(fields: [product_id], references: [id])
+  uploaded_by    User                  @relation(fields: [uploaded_by_user_id], references: [id])
+  verified_facts ProductVerifiedFact[]
+  renders        ProductRender[]
+
+  @@index([product_id])
+  @@index([product_id, source_kind])
+}
+
+model ProductVerifiedFact {
+  id                  String   @id @default(uuid()) @db.Uuid
+  product_id          String   @db.Uuid
+  fact_key            String
+  fact_value_text     String
+  fact_value_number   Decimal? @db.Decimal(20, 6)
+  source_file_id      String?  @db.Uuid
+  verified_by_user_id String   @db.Uuid
+  verified_at         DateTime @db.Timestamptz(6)
+  verification_note   String?
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime @updatedAt @db.Timestamptz(6)
+
+  product     Product            @relation(fields: [product_id], references: [id])
+  source_file ProductSourceFile? @relation(fields: [source_file_id], references: [id])
+  verified_by User               @relation(fields: [verified_by_user_id], references: [id])
+
+  @@index([product_id])
+}
+
+model ProductRender {
+  id                       String    @id @default(uuid()) @db.Uuid
+  product_id               String    @db.Uuid
+  source_file_id           String    @db.Uuid
+  storage_key              String
+  width_px                 Int
+  height_px                Int
+  dpi_value                Int?
+  fit_mode                 String    @default("contain")
+  crop_approved            Boolean   @default(false)
+  crop_approved_by_user_id String?   @db.Uuid
+  crop_approved_at         DateTime? @db.Timestamptz(6)
+  colour_changed           Boolean   @default(false)
+  quality_gate_status      String
+  quality_gate_reason      String?
+  created_at               DateTime  @default(now()) @db.Timestamptz(6)
+
+  product             Product            @relation(fields: [product_id], references: [id])
+  source_file         ProductSourceFile  @relation(fields: [source_file_id], references: [id])
+  crop_approved_by    User?              @relation("ProductRenderCropApprover", fields: [crop_approved_by_user_id], references: [id])
+  listing_pack_images ListingPackImage[]
+
+  @@index([product_id])
+  @@index([source_file_id])
+  @@index([quality_gate_status])
+}
+
+// 3. Listing packs, one product, one platform, one pack version
+
+model ListingPack {
+  id                    String    @id @default(uuid()) @db.Uuid
+  user_id               String    @db.Uuid
+  product_id            String    @db.Uuid
+  platform_id           String    @db.Uuid
+  pack_version_id       String    @db.Uuid
+  niche_pack_id         String?   @db.Uuid
+  niche_pack_version_id String?   @db.Uuid
+  template_id           String?   @db.Uuid
+  status                String    @default("draft")
+  language              String    @default("en")
+  edition               String
+  created_at            DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime  @updatedAt @db.Timestamptz(6)
+  deleted_at            DateTime? @db.Timestamptz(6)
+
+  user                  User                  @relation(fields: [user_id], references: [id])
+  product               Product               @relation(fields: [product_id], references: [id])
+  platform              Platform              @relation(fields: [platform_id], references: [id])
+  pack_version          PlatformPackVersion   @relation(fields: [pack_version_id], references: [id])
+  niche_pack            NichePack?            @relation(fields: [niche_pack_id], references: [id])
+  niche_pack_version    NichePackVersion?     @relation(fields: [niche_pack_version_id], references: [id])
+  template              Template?             @relation(fields: [template_id], references: [id])
+  images                ListingPackImage[]
+  copy                  ListingPackCopy?
+  reconciliation_checks ReconciliationCheck[]
+  exports               Export[]
+  share_links           ShareLink[]
+  ai_usage_logs         AIUsageLog[]
+
+  @@index([user_id])
+  @@index([product_id])
+  @@index([product_id, platform_id, pack_version_id])
+  @@index([platform_id, pack_version_id])
+  @@index([status])
+}
+
+model ListingPackImage {
+  id                  String   @id @default(uuid()) @db.Uuid
+  listing_pack_id     String   @db.Uuid
+  platform_id         String   @db.Uuid
+  pack_version_id     String   @db.Uuid
+  template_version_id String?  @db.Uuid
+  mockup_version_id   String?  @db.Uuid
+  product_render_id   String?  @db.Uuid
+  position            Int
+  image_role          String
+  storage_key         String?
+  width_px            Int?
+  height_px           Int?
+  shortest_side_px    Int?
+  orientation         String?
+  fit_warning         String?
+  quality_gate_status String
+  quality_gate_reason String?
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime @updatedAt @db.Timestamptz(6)
+
+  listing_pack     ListingPack         @relation(fields: [listing_pack_id], references: [id])
+  platform         Platform            @relation(fields: [platform_id], references: [id])
+  pack_version     PlatformPackVersion @relation(fields: [pack_version_id], references: [id])
+  template_version TemplateVersion?    @relation(fields: [template_version_id], references: [id])
+  mockup_version   MockupVersion?      @relation(fields: [mockup_version_id], references: [id])
+  product_render   ProductRender?      @relation(fields: [product_render_id], references: [id])
+
+  @@unique([listing_pack_id, position])
+  @@index([listing_pack_id])
+  @@index([platform_id, pack_version_id])
+}
+
+model ListingPackCopy {
+  id                     String   @id @default(uuid()) @db.Uuid
+  listing_pack_id        String   @unique @db.Uuid
+  platform_id            String   @db.Uuid
+  pack_version_id        String   @db.Uuid
+  copy_prompt_version_id String   @db.Uuid
+  title_text             String?
+  title_char_count       Int?
+  description_text       String?
+  tags_text              Json?
+  keywords_text          String?
+  checklist_text         Json?
+  generation_status      String   @default("draft")
+  created_at             DateTime @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime @updatedAt @db.Timestamptz(6)
+
+  listing_pack        ListingPack              @relation(fields: [listing_pack_id], references: [id])
+  platform            Platform                 @relation(fields: [platform_id], references: [id])
+  pack_version        PlatformPackVersion      @relation(fields: [pack_version_id], references: [id])
+  copy_prompt_version CopyPromptVersion        @relation(fields: [copy_prompt_version_id], references: [id])
+  versions            ListingPackCopyVersion[]
+
+  @@index([platform_id, pack_version_id])
+  @@index([copy_prompt_version_id])
+}
+
+model ListingPackCopyVersion {
+  id                   String   @id @default(uuid()) @db.Uuid
+  listing_pack_copy_id String   @db.Uuid
+  version_number       Int
+  snapshot_json        Json
+  status               String
+  created_by_user_id   String   @db.Uuid
+  created_at           DateTime @default(now()) @db.Timestamptz(6)
+
+  listing_pack_copy ListingPackCopy @relation(fields: [listing_pack_copy_id], references: [id])
+  created_by        User            @relation("ListingPackCopyVersionCreatedBy", fields: [created_by_user_id], references: [id])
+
+  @@unique([listing_pack_copy_id, version_number])
+  @@index([listing_pack_copy_id])
+}
+
+model ReconciliationCheck {
+  id              String   @id @default(uuid()) @db.Uuid
+  listing_pack_id String   @db.Uuid
+  platform_id     String   @db.Uuid
+  pack_version_id String   @db.Uuid
+  status          String
+  checked_at      DateTime @db.Timestamptz(6)
+  checked_by      String
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  listing_pack ListingPack               @relation(fields: [listing_pack_id], references: [id])
+  platform     Platform                  @relation(fields: [platform_id], references: [id])
+  pack_version PlatformPackVersion       @relation(fields: [pack_version_id], references: [id])
+  items        ReconciliationCheckItem[]
+  exports      Export[]
+
+  @@index([listing_pack_id])
+  @@index([listing_pack_id, checked_at])
+  @@index([status])
+}
+
+model ReconciliationCheckItem {
+  id                      String   @id @default(uuid()) @db.Uuid
+  reconciliation_check_id String   @db.Uuid
+  fact_key                String
+  expected_value_text     String
+  generated_value_text    String
+  result                  String
+  action                  String
+  override_reason         String?
+  override_by_user_id     String?  @db.Uuid
+  created_at              DateTime @default(now()) @db.Timestamptz(6)
+
+  reconciliation_check ReconciliationCheck @relation(fields: [reconciliation_check_id], references: [id])
+  override_by          User?               @relation("ReconciliationCheckItemOverrideBy", fields: [override_by_user_id], references: [id])
+
+  @@index([reconciliation_check_id])
+  @@index([fact_key, result])
+}
+
+// 4. Platforms, platform packs and pack versions
+
+model Platform {
+  id                   String   @id @default(uuid()) @db.Uuid
+  slug                 String   @unique
+  name                 String
+  status               String
+  is_digital_supported Boolean?
+  created_at           DateTime @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime @updatedAt @db.Timestamptz(6)
+
+  platform_packs         PlatformPack[]
+  platform_pack_versions PlatformPackVersion[]
+  platform_rules         PlatformRule[]
+  listing_packs          ListingPack[]
+  listing_pack_images    ListingPackImage[]
+  listing_pack_copies    ListingPackCopy[]
+  reconciliation_checks  ReconciliationCheck[]
+  exports                Export[]
+  export_logs            ExportLog[]
+  share_links            ShareLink[]
+  ai_usage_logs          AIUsageLog[]
+  usage_daily_counts     UsageDailyCount[]
+  admin_audit_logs       AdminAuditLog[]
+  feature_flags          FeatureFlag[]
+
+  @@index([status])
+}
+
+model PlatformPack {
+  id          String   @id @default(uuid()) @db.Uuid
+  platform_id String   @db.Uuid
+  slug        String
+  name        String
+  is_active   Boolean  @default(false)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @updatedAt @db.Timestamptz(6)
+
+  platform Platform              @relation(fields: [platform_id], references: [id])
+  versions PlatformPackVersion[]
+
+  @@unique([platform_id, slug])
+  @@index([platform_id])
+}
+
+model PlatformPackVersion {
+  id                   String    @id @default(uuid()) @db.Uuid
+  platform_pack_id     String    @db.Uuid
+  platform_id          String    @db.Uuid
+  version_number       Int
+  definition_json      Json
+  status               String
+  published_at         DateTime? @db.Timestamptz(6)
+  published_by_user_id String?   @db.Uuid
+  created_by_user_id   String    @db.Uuid
+  created_at           DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime  @updatedAt @db.Timestamptz(6)
+
+  platform_pack         PlatformPack          @relation(fields: [platform_pack_id], references: [id])
+  platform              Platform              @relation(fields: [platform_id], references: [id])
+  published_by          User?                 @relation("PlatformPackVersionPublishedBy", fields: [published_by_user_id], references: [id])
+  created_by            User                  @relation("PlatformPackVersionCreatedBy", fields: [created_by_user_id], references: [id])
+  platform_rules        PlatformRule[]
+  listing_packs         ListingPack[]
+  listing_pack_images   ListingPackImage[]
+  listing_pack_copies   ListingPackCopy[]
+  reconciliation_checks ReconciliationCheck[]
+  exports               Export[]
+  export_logs           ExportLog[]
+  share_links           ShareLink[]
+  ai_usage_logs         AIUsageLog[]
+  usage_daily_counts    UsageDailyCount[]
+  admin_audit_logs      AdminAuditLog[]
+  feature_flags         FeatureFlag[]
+
+  @@unique([platform_pack_id, version_number])
+  @@index([platform_id])
+  @@index([status])
+  @@index([published_at])
+}
+
+model PlatformRule {
+  id                  String   @id @default(uuid()) @db.Uuid
+  platform_id         String   @db.Uuid
+  pack_version_id     String?  @db.Uuid
+  rule_key            String
+  rule_value_text     String
+  rule_value_number   Decimal? @db.Decimal(20, 6)
+  verification_status String
+  source_url          String?
+  check_date          DateTime @db.Date
+  source_note         String?
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime @updatedAt @db.Timestamptz(6)
+
+  platform     Platform             @relation(fields: [platform_id], references: [id])
+  pack_version PlatformPackVersion? @relation(fields: [pack_version_id], references: [id])
+
+  @@index([platform_id])
+  @@index([platform_id, rule_key])
+  @@index([verification_status])
+  @@index([check_date])
+}
+
+// 5. Templates and copy prompts
+
+model Template {
+  id            String    @id @default(uuid()) @db.Uuid
+  slug          String    @unique
+  name          String
+  template_role String
+  is_active     Boolean   @default(true)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @updatedAt @db.Timestamptz(6)
+  deleted_at    DateTime? @db.Timestamptz(6)
+
+  versions             TemplateVersion[]
+  niche_pack_templates NichePackTemplate[]
+  listing_packs        ListingPack[]
+  export_logs          ExportLog[]
+
+  @@index([template_role])
+  @@index([is_active])
+}
+
+model TemplateVersion {
+  id                   String    @id @default(uuid()) @db.Uuid
+  template_id          String    @db.Uuid
+  version_number       Int
+  definition_json      Json
+  status               String
+  published_at         DateTime? @db.Timestamptz(6)
+  published_by_user_id String?   @db.Uuid
+  created_by_user_id   String    @db.Uuid
+  created_at           DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime  @updatedAt @db.Timestamptz(6)
+
+  template            Template           @relation(fields: [template_id], references: [id])
+  published_by        User?              @relation("TemplateVersionPublishedBy", fields: [published_by_user_id], references: [id])
+  created_by          User               @relation("TemplateVersionCreatedBy", fields: [created_by_user_id], references: [id])
+  listing_pack_images ListingPackImage[]
+
+  @@unique([template_id, version_number])
+  @@index([status])
+  @@index([published_at])
+}
+
+model CopyPrompt {
+  id             String    @id @default(uuid()) @db.Uuid
+  slug           String    @unique
+  name           String
+  prompt_purpose String
+  is_active      Boolean   @default(true)
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime  @updatedAt @db.Timestamptz(6)
+  deleted_at     DateTime? @db.Timestamptz(6)
+
+  versions CopyPromptVersion[]
+
+  @@index([prompt_purpose])
+}
+
+model CopyPromptVersion {
+  id                   String    @id @default(uuid()) @db.Uuid
+  copy_prompt_id       String    @db.Uuid
+  version_number       Int
+  prompt_text          String
+  model_settings_json  Json?
+  status               String
+  published_at         DateTime? @db.Timestamptz(6)
+  published_by_user_id String?   @db.Uuid
+  created_by_user_id   String    @db.Uuid
+  created_at           DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime  @updatedAt @db.Timestamptz(6)
+
+  copy_prompt         CopyPrompt        @relation(fields: [copy_prompt_id], references: [id])
+  published_by        User?             @relation("CopyPromptVersionPublishedBy", fields: [published_by_user_id], references: [id])
+  created_by          User              @relation("CopyPromptVersionCreatedBy", fields: [created_by_user_id], references: [id])
+  listing_pack_copies ListingPackCopy[]
+  ai_usage_logs       AIUsageLog[]
+
+  @@unique([copy_prompt_id, version_number])
+  @@index([status])
+}
+
+// 6. Niche packs
+
+model NichePack {
+  id          String    @id @default(uuid()) @db.Uuid
+  slug        String    @unique
+  name        String
+  description String?
+  status      String
+  is_active   Boolean   @default(false)
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime  @updatedAt @db.Timestamptz(6)
+  deleted_at  DateTime? @db.Timestamptz(6)
+
+  versions             NichePackVersion[]
+  niche_pack_templates NichePackTemplate[]
+  niche_pack_mockups   NichePackMockup[]
+  listing_packs        ListingPack[]
+
+  @@index([status])
+}
+
+model NichePackVersion {
+  id                   String    @id @default(uuid()) @db.Uuid
+  niche_pack_id        String    @db.Uuid
+  version_number       Int
+  definition_json      Json
+  status               String
+  published_at         DateTime? @db.Timestamptz(6)
+  published_by_user_id String?   @db.Uuid
+  created_by_user_id   String    @db.Uuid
+  created_at           DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime  @updatedAt @db.Timestamptz(6)
+
+  niche_pack    NichePack     @relation(fields: [niche_pack_id], references: [id])
+  published_by  User?         @relation("NichePackVersionPublishedBy", fields: [published_by_user_id], references: [id])
+  created_by    User          @relation("NichePackVersionCreatedBy", fields: [created_by_user_id], references: [id])
+  listing_packs ListingPack[]
+
+  @@unique([niche_pack_id, version_number])
+  @@index([status])
+}
+
+model NichePackTemplate {
+  id            String   @id @default(uuid()) @db.Uuid
+  niche_pack_id String   @db.Uuid
+  template_id   String   @db.Uuid
+  sort_order    Int
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @updatedAt @db.Timestamptz(6)
+
+  niche_pack NichePack @relation(fields: [niche_pack_id], references: [id])
+  template   Template  @relation(fields: [template_id], references: [id])
+
+  @@unique([niche_pack_id, template_id])
+  @@index([niche_pack_id, sort_order])
+}
+
+model NichePackMockup {
+  id            String   @id @default(uuid()) @db.Uuid
+  niche_pack_id String   @db.Uuid
+  mockup_id     String   @db.Uuid
+  sort_order    Int
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @updatedAt @db.Timestamptz(6)
+
+  niche_pack NichePack @relation(fields: [niche_pack_id], references: [id])
+  mockup     Mockup    @relation(fields: [mockup_id], references: [id])
+
+  @@unique([niche_pack_id, mockup_id])
+  @@index([niche_pack_id, sort_order])
+}
+
+// 7. Mockups and mockup versions, core v1 feature
+
+model Mockup {
+  id                 String    @id @default(uuid()) @db.Uuid
+  slug               String    @unique
+  name               String
+  mockup_kind        String
+  is_active          Boolean   @default(false)
+  is_hidden          Boolean   @default(false)
+  created_by_user_id String    @db.Uuid
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime  @updatedAt @db.Timestamptz(6)
+  deleted_at         DateTime? @db.Timestamptz(6)
+
+  created_by         User              @relation("MockupCreatedBy", fields: [created_by_user_id], references: [id])
+  versions           MockupVersion[]
+  niche_pack_mockups NichePackMockup[]
+
+  @@index([mockup_kind])
+  @@index([is_active, is_hidden])
+}
+
+model MockupVersion {
+  id                         String    @id @default(uuid()) @db.Uuid
+  mockup_id                  String    @db.Uuid
+  version_number             Int
+  frame_storage_key          String
+  frame_width_px             Int
+  frame_height_px            Int
+  screen_area_json           Json
+  allowed_orientations_json  Json
+  background                 String?
+  warp_required              Boolean   @default(false)
+  warp_note                  String?
+  crisp_test_status          String
+  crisp_test_note            String?
+  preview_render_storage_key String?
+  status                     String
+  published_at               DateTime? @db.Timestamptz(6)
+  published_by_user_id       String?   @db.Uuid
+  created_by_user_id         String    @db.Uuid
+  licence_source             String?
+  licence_type               String?
+  licence_date               DateTime? @db.Date
+  licence_storage_location   String?
+  created_at                 DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime  @updatedAt @db.Timestamptz(6)
+
+  mockup              Mockup             @relation(fields: [mockup_id], references: [id])
+  published_by        User?              @relation("MockupVersionPublishedBy", fields: [published_by_user_id], references: [id])
+  created_by          User               @relation("MockupVersionCreatedBy", fields: [created_by_user_id], references: [id])
+  listing_pack_images ListingPackImage[]
+
+  @@unique([mockup_id, version_number])
+  @@index([status])
+  @@index([crisp_test_status])
+}
+
+// 8. Exports and export history
+
+model Export {
+  id                      String   @id @default(uuid()) @db.Uuid
+  listing_pack_id         String   @db.Uuid
+  user_id                 String   @db.Uuid
+  platform_id             String   @db.Uuid
+  pack_version_id         String   @db.Uuid
+  export_kind             String
+  file_format             String
+  shortest_side_px        Int
+  storage_key             String?
+  file_size_bytes         Int?
+  image_count             Int?
+  status                  String   @default("queued")
+  error_message           String?
+  reconciliation_check_id String   @db.Uuid
+  created_at              DateTime @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime @updatedAt @db.Timestamptz(6)
+
+  listing_pack         ListingPack         @relation(fields: [listing_pack_id], references: [id])
+  user                 User                @relation(fields: [user_id], references: [id])
+  platform             Platform            @relation(fields: [platform_id], references: [id])
+  pack_version         PlatformPackVersion @relation(fields: [pack_version_id], references: [id])
+  reconciliation_check ReconciliationCheck @relation(fields: [reconciliation_check_id], references: [id])
+  events               ExportEvent[]
+  logs                 ExportLog[]
+
+  @@index([listing_pack_id])
+  @@index([user_id])
+  @@index([platform_id, pack_version_id])
+  @@index([status])
+  @@index([created_at])
+}
+
+model ExportEvent {
+  id                 String   @id @default(uuid()) @db.Uuid
+  export_id          String   @db.Uuid
+  event_type         String
+  status             String
+  detail             String?
+  duration_ms        Int?
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+  created_by_user_id String?  @db.Uuid
+
+  export     Export @relation(fields: [export_id], references: [id])
+  created_by User?  @relation("ExportEventCreatedBy", fields: [created_by_user_id], references: [id])
+
+  @@index([export_id])
+  @@index([export_id, created_at])
+  @@index([event_type])
+}
+
+model ExportLog {
+  id              String   @id @default(uuid()) @db.Uuid
+  export_id       String   @db.Uuid
+  platform_id     String   @db.Uuid
+  pack_version_id String   @db.Uuid
+  template_id     String?  @db.Uuid
+  format          String
+  status          String
+  duration_ms     Int?
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  export       Export              @relation(fields: [export_id], references: [id])
+  platform     Platform            @relation(fields: [platform_id], references: [id])
+  pack_version PlatformPackVersion @relation(fields: [pack_version_id], references: [id])
+  template     Template?           @relation(fields: [template_id], references: [id])
+
+  @@index([export_id])
+  @@index([platform_id, pack_version_id])
+  @@index([created_at])
+}
+
+// 9. Share and review links
+
+model ShareLink {
+  id              String    @id @default(uuid()) @db.Uuid
+  listing_pack_id String    @db.Uuid
+  user_id         String    @db.Uuid
+  platform_id     String?   @db.Uuid
+  pack_version_id String?   @db.Uuid
+  token_hash      String    @unique
+  purpose         String
+  is_active       Boolean   @default(true)
+  expires_at      DateTime? @db.Timestamptz(6)
+  view_count      Int       @default(0)
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @updatedAt @db.Timestamptz(6)
+  deactivated_at  DateTime? @db.Timestamptz(6)
+
+  listing_pack ListingPack          @relation(fields: [listing_pack_id], references: [id])
+  user         User                 @relation(fields: [user_id], references: [id])
+  platform     Platform?            @relation(fields: [platform_id], references: [id])
+  pack_version PlatformPackVersion? @relation(fields: [pack_version_id], references: [id])
+
+  @@index([listing_pack_id])
+  @@index([user_id])
+  @@index([is_active, expires_at])
+}
+
+// 10. Plans, subscriptions, entitlements, trials
+
+model Plan {
+  id                 String   @id @default(uuid()) @db.Uuid
+  slug               String   @unique
+  name               String
+  price_amount_minor Int?
+  price_currency     String?
+  billing_interval   String?
+  tax_treatment      String?
+  entitlements_json  Json?
+  is_active          Boolean  @default(true)
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime @updatedAt @db.Timestamptz(6)
+
+  plan_entitlements PlanEntitlement[]
+  subscriptions     Subscription[]
+  trials            Trial[]
+
+  @@index([is_active])
+}
+
+model PlanEntitlement {
+  id                 String   @id @default(uuid()) @db.Uuid
+  plan_id            String   @db.Uuid
+  entitlement_key    String
+  limit_value_text   String?
+  limit_value_number Decimal? @db.Decimal(20, 6)
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime @updatedAt @db.Timestamptz(6)
+
+  plan Plan @relation(fields: [plan_id], references: [id])
+
+  @@unique([plan_id, entitlement_key])
+  @@index([plan_id])
+}
+
+model UserEntitlement {
+  id                 String    @id @default(uuid()) @db.Uuid
+  user_id            String    @db.Uuid
+  entitlement_key    String
+  limit_value_text   String?
+  limit_value_number Decimal?  @db.Decimal(20, 6)
+  granted_by_user_id String    @db.Uuid
+  granted_reason     String?
+  expires_at         DateTime? @db.Timestamptz(6)
+  is_active          Boolean   @default(true)
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime  @updatedAt @db.Timestamptz(6)
+
+  user       User @relation(fields: [user_id], references: [id])
+  granted_by User @relation("UserEntitlementGrantedBy", fields: [granted_by_user_id], references: [id])
+
+  @@index([user_id])
+  @@index([user_id, entitlement_key])
+  @@index([is_active, expires_at])
+}
+
+model Subscription {
+  id                       String    @id @default(uuid()) @db.Uuid
+  user_id                  String    @db.Uuid
+  plan_id                  String    @db.Uuid
+  payment_provider         String?
+  provider_customer_id     String?
+  provider_subscription_id String?
+  status                   String
+  current_period_start     DateTime? @db.Timestamptz(6)
+  current_period_end       DateTime? @db.Timestamptz(6)
+  cancel_at_period_end     Boolean   @default(false)
+  created_at               DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime  @updatedAt @db.Timestamptz(6)
+
+  user User @relation(fields: [user_id], references: [id])
+  plan Plan @relation(fields: [plan_id], references: [id])
+
+  @@index([user_id])
+  @@index([user_id, status])
+  @@index([plan_id])
+  @@index([provider_subscription_id])
+}
+
+model Trial {
+  id                     String   @id @default(uuid()) @db.Uuid
+  user_id                String   @db.Uuid
+  plan_id                String   @db.Uuid
+  starts_at              DateTime @db.Timestamptz(6)
+  ends_at                DateTime @db.Timestamptz(6)
+  status                 String
+  requires_card          Boolean  @default(false)
+  ai_credit_allowance    Int?
+  export_allowance       Int?
+  listing_pack_allowance Int?
+  created_at             DateTime @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime @updatedAt @db.Timestamptz(6)
+
+  user User @relation(fields: [user_id], references: [id])
+  plan Plan @relation(fields: [plan_id], references: [id])
+
+  @@index([user_id])
+  @@index([user_id, status])
+  @@index([ends_at])
+}
+
+// 11. AI usage
+
+model AICreditLedger {
+  id              String   @id @default(uuid()) @db.Uuid
+  user_id         String   @db.Uuid
+  period_start    DateTime @db.Timestamptz(6)
+  period_end      DateTime @db.Timestamptz(6)
+  credits_granted Int      @default(0)
+  credits_used    Int      @default(0)
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @updatedAt @db.Timestamptz(6)
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, period_start, period_end])
+  @@index([user_id])
+}
+
+model AIUsageLog {
+  id                     String   @id @default(uuid()) @db.Uuid
+  user_id                String   @db.Uuid
+  listing_pack_id        String?  @db.Uuid
+  platform_id            String?  @db.Uuid
+  pack_version_id        String?  @db.Uuid
+  copy_prompt_version_id String?  @db.Uuid
+  operation              String
+  credits_consumed       Int      @default(0)
+  provider               String?
+  model                  String?
+  status                 String
+  error_message          String?
+  created_at             DateTime @default(now()) @db.Timestamptz(6)
+
+  user                User                 @relation(fields: [user_id], references: [id])
+  listing_pack        ListingPack?         @relation(fields: [listing_pack_id], references: [id])
+  platform            Platform?            @relation(fields: [platform_id], references: [id])
+  pack_version        PlatformPackVersion? @relation(fields: [pack_version_id], references: [id])
+  copy_prompt_version CopyPromptVersion?   @relation(fields: [copy_prompt_version_id], references: [id])
+
+  @@index([user_id])
+  @@index([listing_pack_id])
+  @@index([created_at])
+  @@index([status])
+}
+
+// 12. Usage analytics, counts only
+
+model UsageDailyCount {
+  id              String   @id @default(uuid()) @db.Uuid
+  user_id         String   @db.Uuid
+  event_date      DateTime @db.Date
+  event_type      String
+  platform_id     String?  @db.Uuid
+  pack_version_id String?  @db.Uuid
+  count_value     Int      @default(0)
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @updatedAt @db.Timestamptz(6)
+
+  user         User                 @relation(fields: [user_id], references: [id])
+  platform     Platform?            @relation(fields: [platform_id], references: [id])
+  pack_version PlatformPackVersion? @relation(fields: [pack_version_id], references: [id])
+
+  @@unique([user_id, event_date, event_type, platform_id, pack_version_id])
+  @@index([event_date])
+  @@index([event_type])
+}
+
+model SystemLog {
+  id           String   @id @default(uuid()) @db.Uuid
+  level        String
+  message      String
+  context_json Json?
+  user_id      String?  @db.Uuid
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  user User? @relation(fields: [user_id], references: [id])
+
+  @@index([level])
+  @@index([created_at])
+  @@index([user_id])
+}
+
+// 13. Admin audit log and feature flags
+
+model AdminAuditLog {
+  id              String   @id @default(uuid()) @db.Uuid
+  admin_user_id   String   @db.Uuid
+  action          String
+  target_type     String
+  target_id       String   @db.Uuid
+  platform_id     String?  @db.Uuid
+  pack_version_id String?  @db.Uuid
+  reason          String?
+  detail_json     Json?
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  admin_user   User                 @relation(fields: [admin_user_id], references: [id])
+  platform     Platform?            @relation(fields: [platform_id], references: [id])
+  pack_version PlatformPackVersion? @relation(fields: [pack_version_id], references: [id])
+
+  @@index([admin_user_id])
+  @@index([target_type, target_id])
+  @@index([action])
+  @@index([created_at])
+  @@index([platform_id, pack_version_id])
+}
+
+model FeatureFlag {
+  id              String   @id @default(uuid()) @db.Uuid
+  key             String   @unique
+  name            String
+  is_enabled      Boolean  @default(false)
+  plan_scope      String
+  platform_id     String?  @db.Uuid
+  pack_version_id String?  @db.Uuid
+  description     String?
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @updatedAt @db.Timestamptz(6)
+
+  platform     Platform?            @relation(fields: [platform_id], references: [id])
+  pack_version PlatformPackVersion? @relation(fields: [pack_version_id], references: [id])
+
+  @@index([is_enabled])
+  @@index([plan_scope])
+  @@index([platform_id, pack_version_id])
+}
