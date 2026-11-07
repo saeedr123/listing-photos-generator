@@ -1,0 +1,39 @@
+{
+  "packName": "proof-pack",
+  "platformId": "etsy",
+  "packVersion": 1,
+  "images": [
+    {
+      "position": 1,
+      "templateId": "hero",
+      "fileName": "01-hero.jpg",
+      "widthPx": 3000,
+      "heightPx": 2000,
+      "shortestSidePx": 2000,
+      "format": "jpg",
+      "colourProfile": "sRGB"
+    },
+    {
+      "position": 2,
+      "templateId": "feature-close-up",
+      "fileName": "02-feature-close-up.jpg",
+      "widthPx": 3000,
+      "heightPx": 2000,
+      "shortestSidePx": 2000,
+      "format": "jpg",
+      "colourProfile": "sRGB"
+    }
+  ],
+  "textPackFile": "text-pack.txt",
+  "colourProfile": "sRGB",
+  "format": "jpg",
+  "sampleRender": true,
+  "proofMode": true,
+  "reconciliationSummary": "Reconciliation passed: tab count, price, format, and claims match the real product.",
+  "warnings": [
+    "Image hero-product uses a sample render. This is a layout proof only, not a publishable pack.",
+    "First image guidance for etsy: avoid text overlays and collages on the first thumbnail. This hero template keeps its title in the safe top band, not over the product.",
+    "Image feature-product uses a sample render. This is a layout proof only, not a publishable pack."
+  ],
+  "previewExportDifference": null
+}
