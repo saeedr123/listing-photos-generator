@@ -1,0 +1,21 @@
+{
+  "description": "Builder for Listing Photos Generator: upload validation, reconciliation, niche packs, autosave, version history, share links, and export gating. Flag only reconciliation: a mismatch is flagged with the fix, never silently fixed and never silently published.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./browser": "./src/browser.ts"
+  },
+  "main": "./src/index.ts",
+  "name": "@listing-photos-generator/builder",
+  "private": true,
+  "scripts": {
+    "test": "node --test \"src/__tests__/*.test.ts\"",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "type": "module",
+  "types": "./src/index.ts",
+  "version": "0.1.0",
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}
