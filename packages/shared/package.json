@@ -1,0 +1,1 @@
+{"description":"Shared platform neutral types and pure helpers for Listing Photos Generator.","exports":{".":"./src/index.ts","./checks":"./src/checks.ts"},"license":"UNLICENSED","main":"./src/index.ts","name":"@listing-photos-generator/shared","private":true,"types":"./src/index.ts","version":"0.2.0"}
