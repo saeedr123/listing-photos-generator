@@ -1,0 +1,157 @@
+{
+  "brand": {
+    "name": "Listing Photos Generator",
+    "shortName": "Listing Photos Generator"
+  },
+  "dashboard": {
+    "emptyCredits": "AI credit balance is not connected yet.",
+    "emptyExports": "No exports yet.",
+    "emptyPacks": "No listing packs yet. Start one from the landing page.",
+    "emptySubscription": "Plan details are not connected yet.",
+    "sections": {
+      "credits": "AI credits",
+      "exports": "Exports",
+      "listingPacks": "Listing packs",
+      "subscription": "Subscription"
+    },
+    "title": "Dashboard",
+    "welcome": "Your listing packs, exports, and account in one place."
+  },
+  "landing": {
+    "checklistNote": "Each fact below is compared against your real product before export. A mismatch blocks export until it is fixed.",
+    "checklistTitle": "Product check preview",
+    "currencyLabel": "Currency",
+    "featuresLabel": "Features, one per line",
+    "fileLabel": "Product files (sheet PDF or screenshots)",
+    "footerNote": "Version 1 is Etsy only, digital products only. No auto publishing, no video generation.",
+    "formatLabel": "Format",
+    "heading": "Turn your real digital product into a complete Etsy listing pack.",
+    "nameLabel": "Product name",
+    "namePlaceholder": "For example: Maid of Honor Planner",
+    "nichesNote": "Each niche pack needs testing with a real product in that niche before it is used for AI generation.",
+    "nichesTitle": "Niche packs in version 1",
+    "plansNote": "Premium price is decided by the owner and is not set yet. The free pack is complete and usable, with no watermark.",
+    "plansTitle": "Free and premium",
+    "priceLabel": "Price",
+    "pricePlaceholder": "For example: 13.97",
+    "steps": [
+      {
+        "text": "Sheet PDFs or screenshots, price, format, and features. The tool reads the actual facts and flags any mismatch.",
+        "title": "Upload and confirm the real product"
+      },
+      {
+        "text": "Choose one of the version 1 niche packs and a template set that fits the product.",
+        "title": "Pick a niche pack and a template set"
+      },
+      {
+        "text": "Images in order, a title within the platform limit, description, tags, and a pre publish checklist.",
+        "title": "Generate the listing pack"
+      },
+      {
+        "text": "Export Etsy ready JPGs plus a copy paste text pack. There is no auto publishing. You upload the pack to Etsy.",
+        "title": "Export and publish it yourself"
+      }
+    ],
+    "stepsTitle": "How it works",
+    "subheading": "Upload your product, check the facts, and export images, title, description, tags, and a pre publish checklist. Nothing is invented about your product.",
+    "uploadButton": "Check my product",
+    "uploadHelp": "Upload your sheet PDF or screenshots, then confirm price, format, and features. The product check compares them before anything is exported.",
+    "uploadNote": "Upload and product check are not connected to a server yet. This form previews the check only.",
+    "uploadTitle": "Start a listing pack"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "home": "Home",
+    "howItWorks": "How it works",
+    "plans": "Plans"
+  },
+  "demoNotice": "Demo sign in, development only. No real account is created.",
+  "tagline": "Turn your real product into a complete listing pack.",
+  "entryPoints": {
+    "toolsSite": "tools.example.invalid",
+    "nvconsult": "nvconsult.eu"
+  },
+  "auth": {
+    "loginHeading": "Sign in",
+    "registerHeading": "Create your account",
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "nameLabel": "Your name",
+    "loginButton": "Sign in",
+    "registerButton": "Create account",
+    "toRegister": "No account yet? Create one.",
+    "toLogin": "Already have an account? Sign in.",
+    "passwordHint": "At least 10 characters.",
+    "logoutButton": "Sign out"
+  },
+  "builder": {
+    "heading": "Listing pack builder",
+    "steps": [
+      "Product and facts",
+      "Niche pack",
+      "Templates and mockups",
+      "Copy",
+      "Preview and check",
+      "Share and export"
+    ],
+    "step1Heading": "Your real product",
+    "step1Task": "Upload the real product and confirm the facts. The check reads what you upload.",
+    "uploadLabel": "Product files",
+    "uploadHelp": "Sheet PDFs, screenshots, or renders of the actual product. PDF, JPG, or PNG.",
+    "factsHeading": "Product facts",
+    "tabCountLabel": "Tab count",
+    "priceListLabel": "List price (smallest currency unit, for example 1000 means 10.00)",
+    "priceLaunchLabel": "Launch price (smallest currency unit)",
+    "currencyLabel": "Currency",
+    "formatLabel": "Format",
+    "step2Heading": "Choose a niche pack",
+    "step3Heading": "Choose templates and mockups",
+    "step4Heading": "Listing copy",
+    "step4Help": "Copy is generated only from your confirmed facts. Edit anything before export.",
+    "step5Heading": "Preview and product check",
+    "step5Help": "The preview updates live. The check must pass before export.",
+    "step6Heading": "Share and export",
+    "replaceSampleButton": "Replace sample content with my real product",
+    "sampleBadge": "Sample content",
+    "autosaveSaved": "Saved",
+    "autosaveSaving": "Saving...",
+    "exportButton": "Export full pack",
+    "exportBlocked": "Export is blocked. Fix the mismatches above first.",
+    "shareButton": "Create a read only share link",
+    "shareHelp": "A partner or reviewer can view and comment. They cannot edit your pack.",
+    "backButton": "Back",
+    "nextButton": "Continue"
+  },
+  "profile": {
+    "heading": "Seller profile",
+    "help": "One profile per account. It is reused across listing packs, so you do not retype shop details, product facts, or branding for every new pack.",
+    "saveButton": "Save profile",
+    "saved": "Profile saved."
+  },
+  "settings": {
+    "heading": "Account settings",
+    "subscriptionHeading": "Subscription and trial",
+    "deletionHeading": "Delete my account",
+    "deletionHelp": "Deleting your account deletes your listing packs, uploads, exports, and AI logs. This cannot be undone.",
+    "deletionButton": "Request account deletion",
+    "deletionConfirm": "Type DELETE to confirm.",
+    "deletionRequested": "Deletion requested. You will receive a completion record when it is done.",
+    "changePasswordHeading": "Change password",
+    "currentPasswordLabel": "Current password",
+    "newPasswordLabel": "New password"
+  },
+  "share": {
+    "heading": "Shared listing pack",
+    "readOnlyNote": "Read only view. You can comment, you cannot edit the original.",
+    "commentLabel": "Your comment",
+    "commentButton": "Add comment",
+    "expired": "This share link has expired.",
+    "revoked": "This share link has been revoked.",
+    "notFound": "This share link was not found."
+  },
+  "errors": {
+    "generic": "Something went wrong. Try again.",
+    "notSignedIn": "Sign in to continue.",
+    "packNotFound": "That listing pack was not found."
+  }
+}
