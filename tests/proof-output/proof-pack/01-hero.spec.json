@@ -1,0 +1,151 @@
+{
+  "templateId": "hero",
+  "templateVersion": 1,
+  "canvasWidthPx": 3000,
+  "canvasHeightPx": 2000,
+  "colourProfile": "sRGB",
+  "background": "#F7E8E6",
+  "pattern": "subtle-dots",
+  "rects": [],
+  "texts": [
+    {
+      "id": "title",
+      "text": "Maid of Honor Planner",
+      "x": 180,
+      "y": 60,
+      "w": 2640,
+      "h": 220,
+      "fontFamily": "Georgia, 'Times New Roman', serif",
+      "fontSizePx": 107,
+      "fontWeight": 700,
+      "fontStyle": "italic",
+      "fill": "#2B2B2B",
+      "align": "center",
+      "maxLines": 2,
+      "lines": [
+        "Maid of Honor Planner"
+      ]
+    },
+    {
+      "id": "subtitle",
+      "text": "Your complete wedding planning workbook",
+      "x": 180,
+      "y": 290,
+      "w": 2640,
+      "h": 110,
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSizePx": 36,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "fill": "#2B2B2B",
+      "align": "center",
+      "maxLines": 1,
+      "lines": [
+        "Your complete wedding planning workbook"
+      ]
+    },
+    {
+      "id": "pill-1",
+      "text": "12 Interactive Tabs",
+      "x": 180,
+      "y": 1760,
+      "w": 840,
+      "h": 160,
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSizePx": 28,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "fill": "#2B2B2B",
+      "align": "left",
+      "maxLines": 1,
+      "lines": [
+        "12 Interactive Tabs"
+      ]
+    },
+    {
+      "id": "pill-2",
+      "text": "Google Sheets Only",
+      "x": 1080,
+      "y": 1760,
+      "w": 840,
+      "h": 160,
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSizePx": 28,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "fill": "#2B2B2B",
+      "align": "left",
+      "maxLines": 1,
+      "lines": [
+        "Google Sheets Only"
+      ]
+    },
+    {
+      "id": "pill-3",
+      "text": "Instant Download",
+      "x": 1980,
+      "y": 1760,
+      "w": 840,
+      "h": 160,
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSizePx": 28,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "fill": "#2B2B2B",
+      "align": "left",
+      "maxLines": 1,
+      "lines": [
+        "Instant Download"
+      ]
+    }
+  ],
+  "images": [
+    {
+      "id": "hero-product",
+      "kind": "product-render",
+      "x": 120,
+      "y": 420,
+      "w": 2760,
+      "h": 1280,
+      "sourceWidthPx": 3000,
+      "sourceHeightPx": 2000,
+      "isSample": true,
+      "label": "Seller real product render",
+      "sheetLines": [
+        "Start Here and Guide",
+        "Home Dashboard",
+        "Bride Profile and Cheat Sheet",
+        "Master To-Do List",
+        "Day-Of Status Card",
+        "Master Budget and Split Calculator",
+        "Transaction Log",
+        "Venue and Airbnb Comparison",
+        "Itinerary and Event Schedules",
+        "MOH Speech Builder",
+        "Mobile Quick-Expense Log",
+        "Printable Bridal Suite Kit"
+      ],
+      "mockupKind": "laptop-plus-phone",
+      "mockupScreens": [
+        {
+          "h": 380,
+          "w": 560,
+          "x": 60,
+          "y": 80,
+          "landscape": true
+        },
+        {
+          "h": 440,
+          "w": 220,
+          "x": 660,
+          "y": 180,
+          "landscape": false
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    "First image guidance for etsy: avoid text overlays and collages on the first thumbnail. This hero template keeps its title in the safe top band, not over the product."
+  ],
+  "quality": 92
+}
