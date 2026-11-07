@@ -1,0 +1,20 @@
+{
+  "description": "Modular auth service for Listing Photos Generator. Split ready: a later move to separate logins or single sign on is a configuration and provider swap, not a rewrite of the builder, templates, mockups, or billing.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "main": "./src/index.ts",
+  "name": "@listing-photos-generator/auth",
+  "private": true,
+  "scripts": {
+    "test": "node --test \"src/__tests__/*.test.ts\"",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "type": "module",
+  "types": "./src/index.ts",
+  "version": "0.1.0",
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}
