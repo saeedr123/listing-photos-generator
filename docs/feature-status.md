@@ -101,10 +101,35 @@ Test results, coordinator run 2026-11-10:
 - Full typecheck passes, lint passes, Prisma schema valid, Next build passes.
 - Production click through: 14 routes return 200, admin routes return 307 to login for logged out visitors, forged cookie returns 307, mobile user agent on home returns 200.
 
+## Server login and RefundRequest, 2026-11-11, coordinator verified
+
+Local files only, no GitHub push. Phase 2 v1 core and the gap fill were not rebuilt.
+
+What was built:
+- Server login action: apps/web/src/lib/server-auth.ts (getServerAuthService singleton, AuthService on PrismaAuthProvider; InMemoryPrismaDelegate implementing the full PrismaAuthClient contract, DEVELOPMENT ONLY, store on globalThis so the action chunk and the admin page chunk share one store; first admin seed from LPG_SEED_ADMIN_EMAIL and LPG_SEED_ADMIN_PASSWORD only when the store is empty, never hard coded, never logged) and apps/web/src/app/auth/actions.ts (loginAction sets the httpOnly lpg_session cookie, logoutAction revokes and clears it). Admin layout passes the AuthService as the resolver and has a sign out button. LoginForm now calls loginAction instead of demoLogin. Middleware unchanged: cookie presence first layer only, layout stays authoritative. 9 new tests in tests/server-auth.test.ts.
+- RefundRequest table: Prisma model RefundRequest, 45 models total, migration 0003_refund_request (generated, not applied to any database). PrismaBillingStore persists through the refundRequest delegate; InMemoryBillingStore through its own in memory table. 3 new billing tests plus 1 in memory test. The row id is database generated; requestRefund builds a "refund_" prefixed id which is not a valid UUID, so the returned request carries the row id.
+- prisma generate tried once: failed with ECONNRESET while downloading the Prisma engine, no generated client exists. The install added @prisma/client ^6.19.3 to package.json dependencies; resolveDelegate falls back to the in memory delegate with a warning when the generated client cannot be loaded. No live database test was run or claimed.
+- scripts/verify-server-login.sh automates the production login proof (7 checks) against a production build it starts itself.
+
+Test results, coordinator run 2026-11-11:
+- Root vitest: 43 pass, 0 fail.
+- Engine suite ./tests/run-tests.sh: 56 pass, 0 fail.
+- Node suites (billing, AI, billing provider, real pack): 87 pass, 0 fail.
+- Auth package: 13 pass, 0 fail. Builder package: 17 pass, 0 fail. Admin package: 7 pass, 0 fail.
+- Total: 223 pass, 0 fail.
+- Full typecheck passes, lint passes, Prisma schema valid, Next build passes.
+- Production click through with scripts/verify-server-login.sh: all 7 checks pass (logged out /admin 307, forged cookie 307, wrong password 200 with the generic message and no cookie, correct login 303 to /admin with the HttpOnly SameSite=Lax cookie, logged in /admin 200 with Admin panel and Sign out, logout 303 and the old token then 307). Mobile home 200, desktop home 200, login page 200.
+
+Still open after this increment:
+- No live database test: prisma generate failed (ECONNRESET), no generated client, Docker and Postgres absent here. Next step: on a machine with network and Docker, run npx prisma generate, apply migrations 0001, 0002, 0003 to a test database, then test the Prisma adapters against it.
+- No admin read-only refund list yet (follow-up recorded): needs a generated client, DATABASE_URL, and a live database first, then a server data loader in apps/web/src/lib/admin-data.ts and a list on /admin/subscriptions or /admin/refunds with an honest empty state.
+- Register is still demo: the register form still uses the demo store. Next step: a server register action on the same AuthService, in a later increment.
+- No browser UI click through: login was proven over HTTP with the exact server action wire format the browser client sends; no one has clicked Sign in in a real browser yet.
+
 Still open after the gap fill:
-- Server login action for real admin access (see PROJECT_STATUS.md).
+- Server login action for real admin access: DONE 2026-11-11, see the section above.
 - Migration not applied to any database.
-- Refund requests have no Prisma table; held in the store log only.
+- Refund requests have no Prisma table; held in the store log only: DONE 2026-11-11, RefundRequest model and migration 0003 added, see the section above. Still open: no admin read-only refund list yet.
 - Three decision flags are not wired into the admin flags UI.
 - AI generateCopy still runs the local development stub when called directly; the gate must be called first in production wiring.
 - Proof pack gaps: image 04 blank tablet screen, no portrait mobile-view or square who-it-is-for proof, 6 templates left out, no frame premium until Saeed approves it in plain words.
