@@ -1,0 +1,25 @@
+# Local Postgres for testing only, Listing Photos Generator.
+# Starts a Postgres container on the host, nothing hosted, no spending.
+# The database is named listing_test and is for migrations and adapter
+# checks only. Never point this at a production DATABASE_URL, and never
+# put real user data in it. See docs/local-setup.md for the steps.
+# Port 5433 on the host is used on purpose, so this does not clash with
+# a Postgres already running on the usual 5432.
+# The password below is a local test placeholder, not a real secret.
+# It only ever runs on the local machine, inside this container.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: listing-studio-test-db
+    environment:
+      POSTGRES_USER: listing_test
+      POSTGRES_PASSWORD: listing_test
+      POSTGRES_DB: listing_test
+    ports:
+      - "5433:5432"
+    volumes:
+      - listing-studio-test-db-data:/var/lib/postgresql/data
+
+volumes:
+  listing-studio-test-db-data:
