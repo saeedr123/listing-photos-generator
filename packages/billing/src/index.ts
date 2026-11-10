@@ -54,12 +54,25 @@ export {
 } from "./disclosure.ts";
 export type { AnnualSaving, BillingTerms } from "./disclosure.ts";
 export {
+  billingProviderName,
+  createBillingProvider,
+  DEFAULT_BILLING_PROVIDER_NAME,
+  listBillingProviders,
+  registerBillingProvider,
+  resolveBillingProvider,
+} from "./provider.ts";
+export type {
+  BillingProvider,
+  BillingProviderFactory,
+  CheckoutRequest,
+  CheckoutResult,
+} from "./provider.ts";
+export {
   STUB_NOTICE,
   StripeStubProvider,
   defaultBillingProvider,
   newStubId,
 } from "./stripe-stub.ts";
-export type { BillingProvider, CheckoutRequest, CheckoutResult } from "./stripe-stub.ts";
 export { buildInvoiceDraft, getVatTreatment } from "./vat.ts";
 export type { InvoiceDraft, VatTreatment } from "./vat.ts";
 export {
@@ -73,3 +86,62 @@ export {
 export type { CancelResult, RefundRequest } from "./cancel-refund.ts";
 export { newReminderId, scheduleRenewalReminder, scheduleTrialEndReminder } from "./reminders.ts";
 export type { ReminderRecord } from "./reminders.ts";
+export {
+  PrismaBillingStore,
+  InMemoryBillingStore,
+  createBillingStore,
+} from "./prisma-billing-store.ts";
+export type {
+  AiCreditBalance,
+  AiUsageRecord,
+  BillingStore,
+  BillingStoreOptions,
+  EntitlementRecord,
+  GrantEntitlementInput,
+  PrismaAICreditLedgerRow,
+  PrismaAIUsageLogRow,
+  PrismaBillingClient,
+  PrismaSubscriptionRow,
+  PrismaTrialRow,
+  PrismaUserEntitlementRow,
+  RecordAiUsageInput,
+  SavedRefundRequest,
+  TrialAllowances,
+} from "./prisma-billing-store.ts";
+export {
+  EMAIL_API_KEY_ENV_VAR,
+  buildRenewalReminderEmail,
+  buildTrialEndReminderEmail,
+  createEmailHook,
+  describeEmailConfig,
+  listEmailProviders,
+  loadEmailHookConfig,
+  registerEmailProvider,
+  sendReminderEmail,
+} from "./email-hook.ts";
+export type {
+  AccountEmailKind,
+  EmailHook,
+  EmailHookConfig,
+  EmailMessage,
+  EmailSendAttempt,
+  EmailSendFunction,
+  ReminderSendOutcome,
+} from "./email-hook.ts";
+export {
+  getDecision,
+  loadFeatureDecisions,
+  featureDecisionsPath,
+  mockupPricing,
+  reconciliationMode,
+  describeFeatureDecisions,
+  trialShape,
+  validateFeatureDecisions,
+} from "./feature-decisions.ts";
+export type {
+  FeatureDecision,
+  FeatureDecisionsConfig,
+  MockupPricing,
+  ReconciliationMode,
+  TrialShape,
+} from "./feature-decisions.ts";
