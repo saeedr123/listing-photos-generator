@@ -152,15 +152,22 @@ optional comment, reviewed in admin, is planned, not built yet.
   Checked 2026-11-10 by the coordinator on the production server:
   logged out GET /admin returns 307 to /auth/login?next=%2Fadmin,
   logged out GET /admin/users returns 307, a forged lpg_session
-  cookie returns 307, and 9 admin gate unit tests pass. The gate
-  fails closed for everyone until the server login action lands;
-  see the separate open item below for real admin access.
-- [ ] Server login action for real admin access: a server login
-  action that sets the lpg_session cookie, a generated Prisma
-  client, and passing an AuthService built on PrismaAuthProvider
-  as the resolver in the admin layout. Still open 2026-11-10:
-  sign in today is the demo store in browser sessionStorage,
-  which server code cannot read.
+  cookie returns 307, and 9 admin gate unit tests pass. Server
+  login landed 2026-11-11, so a signed in admin now reaches /admin
+  with 200; see the item below.
+- [x] Server login action for real admin access: loginAction and
+  logoutAction in apps/web/src/app/auth/actions.ts, AuthService on
+  PrismaAuthProvider passed as the resolver in the admin layout,
+  httpOnly lpg_session cookie on success. Checked 2026-11-11 by
+  the coordinator on the production server with
+  scripts/verify-server-login.sh, all 7 checks pass: logged out
+  /admin 307, forged cookie 307, wrong password 200 with the
+  generic message and no cookie, correct login 303 to /admin with
+  the cookie, logged in /admin 200 with Admin panel and Sign out,
+  logout 303 and the old token then 307. Still open: no live
+  database test, because prisma generate failed with ECONNRESET
+  and no generated client exists; the in memory delegate is the
+  only path proven live. Register is still demo.
 - [ ] Premium price, currency, billing interval, Stripe account,
   and VAT treatment decided by Ali and confirmed with his
   accountant. No price invented. Still open 2026-11-10: prices
@@ -179,7 +186,11 @@ optional comment, reviewed in admin, is planned, not built yet.
   Checked 2026-11-07, rechecked 2026-11-10 by the coordinator:
   211 tests pass, 0 fail (root vitest 34, engine suite 56, node
   suites 84, auth 13, builder 17, admin 7), full typecheck passes,
-  lint passes, Prisma schema valid, Next build passes. The earlier
+  lint passes, Prisma schema valid, Next build passes. Rechecked
+  2026-11-11 by the coordinator: 223 tests pass, 0 fail (root
+  vitest 43, engine suite 56, node suites 87, auth 13, builder 17,
+  admin 7), full typecheck passes, lint passes, Prisma schema
+  valid (45 models), Next build passes. The earlier
   failure note is removed: the AI worker fixed its imports in
   apps/web/src/components/ai/AiSuggestions.tsx while still running,
   config/copy-prompts.json now exists on disk (verified
@@ -194,7 +205,10 @@ optional comment, reviewed in admin, is planned, not built yet.
   niches wedding-and-events, platforms Etsy, account, checkout),
   admin routes return 307 to login for logged out visitors (the
   gate working, not a failure), a forged session cookie returns
-  307, and a mobile user agent on home returns 200.
+  307, and a mobile user agent on home returns 200. Rechecked
+  2026-11-11 by the coordinator with scripts/verify-server-login.sh:
+  all 7 server login checks pass on the production server, and
+  mobile home, desktop home, and the login page all return 200.
 - [ ] Reconciliation fix vs flag, trial shape, and mockup pricing
   decisions tested with real sellers. Still open 2026-11-10:
   the three decisions are now admin-configurable flags in
