@@ -2,7 +2,7 @@
 // means Ali has not decided the amount, never zero and never a hidden
 // amount. No credit amount is invented here.
 
-import type { CreditState } from "./types.ts";
+import type { AiProviderConfig, CreditState } from "./types.ts";
 
 export interface PlansConfigShape {
   plans: Array<{
@@ -62,4 +62,45 @@ export function formatCreditDisplay(credits: CreditState): string {
     return "AI credits used this month: not recorded yet. Monthly limit: " + credits.limit + ".";
   }
   return "AI credits used this month: " + credits.used + " of " + credits.limit + ".";
+}
+
+export type AiGenerationGateCode =
+  | "credit_limit_not_set"
+  | "provider_not_configured"
+  | "credit_limit_reached"
+  | null;
+
+// Production generation gate. AI generation is allowed only when both
+// parts are in place: a real provider is configured, and the monthly
+// credit limit is set in admin and not yet reached. Either part missing
+// blocks generation.
+//
+// This gate is separate from generateCopy on purpose. generateCopy
+// still runs the local development stub when no provider is chosen,
+// so local work and the existing tests keep working. Production wiring
+// must call this gate before generateCopy, and must refuse generation
+// when it returns allowed false. The development stub is local work
+// only and must never be presented as a real AI provider.
+export function aiGenerationGate(
+  credits: CreditState,
+  providerConfig: AiProviderConfig,
+): { allowed: boolean; code: AiGenerationGateCode; reason: string } {
+  if (credits.limit === null) {
+    return { allowed: false, code: "credit_limit_not_set", reason: "AI credit limit not set in admin yet." };
+  }
+  if (providerConfig.provider === null || providerConfig.provider === "") {
+    return {
+      allowed: false,
+      code: "provider_not_configured",
+      reason: "No AI provider is configured. The provider choice is an open decision for Ali, and no real provider call is made until he chooses one.",
+    };
+  }
+  if (credits.used !== null && credits.used >= credits.limit) {
+    return {
+      allowed: false,
+      code: "credit_limit_reached",
+      reason: "AI credit limit reached for this month: " + credits.used + " of " + credits.limit + " used.",
+    };
+  }
+  return { allowed: true, code: null, reason: "" };
 }
