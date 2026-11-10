@@ -42,6 +42,26 @@ export interface AiProvider {
   generate(request: AiGenerateRequest): Promise<AiRawOutput>;
 }
 
+export type AiProviderFactory = (config: AiProviderConfig) => AiProvider;
+
+const aiProviderRegistry = new Map<string, AiProviderFactory>();
+
+// Register an AI provider implementation under its config name. The
+// copy engine calls only the AiProvider interface, never a registered
+// implementation directly. No real provider is registered in this
+// build. A later provider is added by registering its factory and
+// naming it in config, never by editing the copy engine.
+export function registerAiProvider(name: string, factory: AiProviderFactory): void {
+  if (!name || typeof factory !== "function") {
+    throw new Error("An AI provider needs a name and a factory function.");
+  }
+  aiProviderRegistry.set(name, factory);
+}
+
+export function listAiProviders(): string[] {
+  return [...aiProviderRegistry.keys()].sort();
+}
+
 function truncateAtWord(text: string, maxChars: number): string {
   if ([...text].length <= maxChars) {
     return text;
@@ -167,11 +187,16 @@ export class DevelopmentStubProvider implements AiProvider {
 
 // Resolve a provider from config. A null provider name means no provider
 // has been chosen, so the development stub is returned for local work only.
-// A named provider that has no real implementation throws, instead of
+// A named provider that has a registered factory is returned from the
+// registry. A named provider that has no real implementation throws, instead of
 // silently falling back to the stub and pretending to be that provider.
 export function createProvider(config: AiProviderConfig): AiProvider {
   if (config.provider === null || config.provider === "") {
     return new DevelopmentStubProvider();
+  }
+  const factory = aiProviderRegistry.get(config.provider);
+  if (factory) {
+    return factory(config);
   }
   throw new Error(
     "AI provider \"" + config.provider + "\" is not configured. The provider choice is an open decision for Ali, and no real provider call is made until he chooses one.",
