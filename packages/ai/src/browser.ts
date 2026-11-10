@@ -35,9 +35,11 @@ export {
 export {
   DevelopmentStubProvider,
   createProvider,
+  listAiProviders,
   providerLabel,
+  registerAiProvider,
 } from "./provider.ts";
-export type { AiGenerateRequest, AiProvider, AiRawOutput } from "./provider.ts";
+export type { AiGenerateRequest, AiProvider, AiProviderFactory, AiRawOutput } from "./provider.ts";
 export {
   checkKeyword,
   generateChecklist,
@@ -51,12 +53,13 @@ export {
 export type { GenerateInput } from "./copy.ts";
 export {
   canUseCredit,
+  aiGenerationGate,
   creditsRemaining,
   formatCreditDisplay,
   getCreditLimit,
   getTrialCreditAllowance,
 } from "./credits.ts";
-export type { PlansConfigShape } from "./credits.ts";
+export type { AiGenerationGateCode, PlansConfigShape } from "./credits.ts";
 export {
   NICHE_PACK_COUNT_V1,
   checkNichePackSet,
