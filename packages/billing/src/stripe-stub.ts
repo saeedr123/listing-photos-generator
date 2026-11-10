@@ -1,42 +1,28 @@
-// Stripe provider interface and development stub.
+// Stripe development stub, one registered BillingProvider implementation.
 // DEVELOPMENT STUB ONLY. No real Stripe keys, no real charges, no live
 // payment flow, no spending. The stub records what would have happened and
 // returns a stub record with charge amount zero. It never calls the network
 // and never stores a real payment method. A live provider replaces this
 // stub only after Ali decides the price, the Stripe account, and the VAT
 // treatment, and only after a separate go ahead for payments.
+//
+// The BillingProvider interface lives in provider.ts. The core talks only
+// to that interface and resolves the provider through the registry there.
+// This file registers the stub under the name "stripe_stub" and holds no
+// core logic: swapping in a live Stripe provider later means registering
+// a new implementation under its own name and naming it in
+// config/plans.json under billing_provider, not editing this file or the
+// core.
 
 import { BillingError } from "./types.ts";
-import type { BillingInterval, PlansConfig } from "./types.ts";
+import type { PlansConfig } from "./types.ts";
+import {
+  registerBillingProvider,
+  resolveBillingProvider,
+} from "./provider.ts";
+import type { BillingProvider, CheckoutRequest, CheckoutResult } from "./provider.ts";
 
-export interface CheckoutRequest {
-  user_id: string;
-  plan_slug: string;
-  billing_interval: BillingInterval;
-  // Clear, separate authorization to charge. Trial start alone is never
-  // authorization. A checkout without authorized true is refused.
-  authorized: boolean;
-  authorization_note?: string;
-}
-
-export interface CheckoutResult {
-  provider: string;
-  mode: string;
-  status: "stub_no_charge" | "blocked";
-  checkout_session_id: string | null;
-  subscription_id: string | null;
-  charge_amount_minor: number;
-  note: string;
-}
-
-export interface BillingProvider {
-  name: string;
-  createCheckoutSession(config: PlansConfig, request: CheckoutRequest): CheckoutResult;
-  createSubscription(
-    config: PlansConfig,
-    request: CheckoutRequest,
-  ): CheckoutResult;
-}
+export type { BillingProvider, CheckoutRequest, CheckoutResult } from "./provider.ts";
 
 export const STUB_NOTICE =
   "DEVELOPMENT STUB ONLY. No real charge was made, no real Stripe key was used, and no live payment flow ran.";
@@ -112,9 +98,15 @@ export class StripeStubProvider implements BillingProvider {
   }
 }
 
-// The default provider for this build is always the stub. A live Stripe
-// provider must be wired in by a separate decision, with real keys in the
-// secure secret store, never in code.
+// The default provider for this build is always the stub, resolved
+// through the registry in provider.ts. A live Stripe provider must be
+// registered under its own name and named in config/plans.json under
+// billing_provider, with real keys in the secure secret store, never
+// in code.
 export function defaultBillingProvider(): BillingProvider {
-  return new StripeStubProvider();
+  return resolveBillingProvider("stripe_stub");
 }
+
+// Register the stub as the one working provider in this build, so the
+// core can resolve it by name from config without importing this file.
+registerBillingProvider("stripe_stub", () => new StripeStubProvider());
