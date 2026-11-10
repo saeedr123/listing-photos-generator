@@ -1,0 +1,210 @@
+{
+  "pack": "real-pack",
+  "product": "Maid of Honor Planner",
+  "built": "2026-11-10",
+  "source_folder": "/home/hatch/workspace/etsy-maid-of-honor/templates-redesigned",
+  "facts_used": {
+    "tab_count": 12,
+    "format": "Google Sheets",
+    "price_list": "USD 13.97",
+    "price_launch": "USD 9.78",
+    "facts_note": "Task supplied, not live rechecked. Prices are not shown on the images. Reconfirm before published use."
+  },
+  "method": "Each real render placed whole into a 3000x2000 canvas, contain fit, centred, no stretch, no crop, no colour change. Only changes from the source file: JPEG re-save at quality 92 and the embedded sRGB ICC profile.",
+  "colour_profile": "sRGB IEC61966-2.1",
+  "quality": 92,
+  "images": [
+    {
+      "position": 1,
+      "file_name": "01-hero.jpg",
+      "template_id": "hero",
+      "template_name": "Hero",
+      "source_file": "filled-hero-both-screens-start-here.jpg",
+      "mockup_shown": "laptop-plus-phone, as shown in the render",
+      "feature_shown": "Product at a glance: Start Here and Guide tab on the laptop, Mobile Quick-Expense Log on the phone",
+      "facts_visible": "12 Tabs, Instant Download, Google Sheets Only",
+      "notes": "Both screens show real sheet content. The phone screen is small, so its sheet text is small at export size. The Start Here sheet shows demo names and dates (Sarah Jenkins, Michael Adams, Jessica Taylor, 2027 dates), which are demo content inside the sheet, not listing claims.",
+      "source_path": "/home/hatch/workspace/etsy-maid-of-honor/templates-redesigned/filled-hero-both-screens-start-here.jpg",
+      "source_sha256": "44a4d0415f6a1abad35296587fedda1f70905a0c70d0e73e56ceea360e048148",
+      "source_size_px": [
+        3000,
+        2000
+      ],
+      "source_mode": "RGB",
+      "source_icc_profile": "none",
+      "output_path": "/home/hatch/workspace/listing-studio/tests/proof-output/real-pack/01-hero.jpg",
+      "output_size_px": [
+        3000,
+        2000
+      ],
+      "output_mode": "RGB",
+      "output_quality": 92,
+      "placement": {
+        "fit": "contain",
+        "centred": true,
+        "scale": 1.0,
+        "offset_x_px": 0,
+        "offset_y_px": 0,
+        "crop": "none",
+        "stretch": "none",
+        "colour_change": "none"
+      },
+      "mean_abs_pixel_diff_vs_source": 0.2,
+      "icc_profile": "sRGB IEC61966-2.1",
+      "icc_profile_bytes": 6600,
+      "icc_verified": "APP2 ICC segment present in the output file bytes, profile re-opened with Pillow and read back as sRGB IEC61966-2.1"
+    },
+    {
+      "position": 2,
+      "file_name": "02-feature-close-up.jpg",
+      "template_id": "feature-close-up",
+      "template_name": "Feature Close Up",
+      "source_file": "filled-start-here-guide-crisp.jpg",
+      "mockup_shown": "laptop-alone, as shown in the render",
+      "feature_shown": "Start Here and Guide tab, full sheet on a laptop: master setup, currency switch, 5-step quick start guide, sharing guide",
+      "facts_visible": "1-Click Currency Switch, 12 Interactive Tabs, Google Sheets Only",
+      "notes": "The feature shown is the Start Here and Guide tab, not the Itinerary tab. Sheet text is crisp and legible at export size. The sheet shows the same demo names and dates as image 01, which are demo content inside the sheet, not listing claims.",
+      "source_path": "/home/hatch/workspace/etsy-maid-of-honor/templates-redesigned/filled-start-here-guide-crisp.jpg",
+      "source_sha256": "035bc905713032b44a7bac2a340b06de443c855cc87b966477accca044d099a5",
+      "source_size_px": [
+        3000,
+        2000
+      ],
+      "source_mode": "RGB",
+      "source_icc_profile": "none",
+      "output_path": "/home/hatch/workspace/listing-studio/tests/proof-output/real-pack/02-feature-close-up.jpg",
+      "output_size_px": [
+        3000,
+        2000
+      ],
+      "output_mode": "RGB",
+      "output_quality": 92,
+      "placement": {
+        "fit": "contain",
+        "centred": true,
+        "scale": 1.0,
+        "offset_x_px": 0,
+        "offset_y_px": 0,
+        "crop": "none",
+        "stretch": "none",
+        "colour_change": "none"
+      },
+      "mean_abs_pixel_diff_vs_source": 0.175,
+      "icc_profile": "sRGB IEC61966-2.1",
+      "icc_profile_bytes": 6600,
+      "icc_verified": "APP2 ICC segment present in the output file bytes, profile re-opened with Pillow and read back as sRGB IEC61966-2.1"
+    },
+    {
+      "position": 3,
+      "file_name": "03-what-is-inside.jpg",
+      "template_id": "what-is-inside",
+      "template_name": "What Is Inside",
+      "source_file": "hero-filled-home-dashboard-mobile-log.jpg",
+      "mockup_shown": "laptop-plus-phone, as shown in the render",
+      "feature_shown": "Home Dashboard with the Quick Navigation and Workbook Directory, which lists the tabs in order, plus the Mobile Quick-Expense Log on the phone",
+      "facts_visible": "12 Tabs, Instant Download, Google Sheets Only",
+      "notes": "The dashboard directory is what makes this a what is inside proof: it lists the tabs. The dashboard sheet contains demo data (sample names, 2027 dates, countdowns in days, budget figures, charts), which is demo content inside the sheet, not listing claims, and the text pack does not repeat those figures.",
+      "source_path": "/home/hatch/workspace/etsy-maid-of-honor/templates-redesigned/hero-filled-home-dashboard-mobile-log.jpg",
+      "source_sha256": "f5bbe08a9cada4cdb350645ddf9484ce70ba5c511c4c5b093e31d9ac0150c031",
+      "source_size_px": [
+        3000,
+        2000
+      ],
+      "source_mode": "RGB",
+      "source_icc_profile": "none",
+      "output_path": "/home/hatch/workspace/listing-studio/tests/proof-output/real-pack/03-what-is-inside.jpg",
+      "output_size_px": [
+        3000,
+        2000
+      ],
+      "output_mode": "RGB",
+      "output_quality": 92,
+      "placement": {
+        "fit": "contain",
+        "centred": true,
+        "scale": 1.0,
+        "offset_x_px": 0,
+        "offset_y_px": 0,
+        "crop": "none",
+        "stretch": "none",
+        "colour_change": "none"
+      },
+      "mean_abs_pixel_diff_vs_source": 0.243,
+      "icc_profile": "sRGB IEC61966-2.1",
+      "icc_profile_bytes": 6600,
+      "icc_verified": "APP2 ICC segment present in the output file bytes, profile re-opened with Pillow and read back as sRGB IEC61966-2.1"
+    },
+    {
+      "position": 4,
+      "file_name": "04-feature-itinerary.jpg",
+      "template_id": "feature-close-up",
+      "template_name": "Feature Close Up (second feature image, itinerary)",
+      "source_file": "redesigned-feature-itinerary-large-v2.jpg",
+      "mockup_shown": "tablet-alone, as shown in the render",
+      "feature_shown": "Itinerary and Event Schedules: title, callouts, and pill bar only. The tablet screen is blank white in the source file, so the real Itinerary and Event Schedules tab is NOT shown",
+      "facts_visible": "12 Interactive Tabs, Google Sheets Only, Instant Download",
+      "notes": "DEFECT, recorded not hidden: the tablet screen is blank white in the source file. This image proves the feature layout and the tablet frame only. It must not be published as a feature proof until a real Itinerary and Event Schedules tab screenshot is placed in the tablet screen.",
+      "source_path": "/home/hatch/workspace/etsy-maid-of-honor/templates-redesigned/redesigned-feature-itinerary-large-v2.jpg",
+      "source_sha256": "55b1b2c776ffee39c2178f548885267a69551a7663403603a944ff552850e1bd",
+      "source_size_px": [
+        3000,
+        2000
+      ],
+      "source_mode": "RGB",
+      "source_icc_profile": "none",
+      "output_path": "/home/hatch/workspace/listing-studio/tests/proof-output/real-pack/04-feature-itinerary.jpg",
+      "output_size_px": [
+        3000,
+        2000
+      ],
+      "output_mode": "RGB",
+      "output_quality": 92,
+      "placement": {
+        "fit": "contain",
+        "centred": true,
+        "scale": 1.0,
+        "offset_x_px": 0,
+        "offset_y_px": 0,
+        "crop": "none",
+        "stretch": "none",
+        "colour_change": "none"
+      },
+      "mean_abs_pixel_diff_vs_source": 0.13,
+      "icc_profile": "sRGB IEC61966-2.1",
+      "icc_profile_bytes": 6600,
+      "icc_verified": "APP2 ICC segment present in the output file bytes, profile re-opened with Pillow and read back as sRGB IEC61966-2.1"
+    }
+  ],
+  "templates_left_out": [
+    {
+      "template_id": "bundle-all-tabs",
+      "reason": "No real render shows all 12 tabs as cards or as a grid. Left out rather than faked."
+    },
+    {
+      "template_id": "features-grid",
+      "reason": "No real render lists the features as six cards. Left out rather than faked."
+    },
+    {
+      "template_id": "final-call-to-action",
+      "reason": "No real render shows a closing message with a next step. Left out rather than faked."
+    },
+    {
+      "template_id": "how-it-works",
+      "reason": "No real render shows the three purchase to planning steps. The Start Here sheet shows a 5-step quick start guide, which is not the same three steps, and that source file is already used for image 02. Reusing it here would mislabel it. Left out."
+    },
+    {
+      "template_id": "mobile-view",
+      "reason": "Portrait 2:3 canvas. All 12 real renders are landscape 3000x2000. A portrait proof would need bands or a crop, and no crop is approved. The Mobile Quick-Expense Log is visible on the phone in images 01 and 03, but that does not make a portrait mobile-view proof. Left out."
+    },
+    {
+      "template_id": "sizes-and-formats",
+      "reason": "No real render shows a format and size facts table. Left out rather than faked."
+    },
+    {
+      "template_id": "who-it-is-for",
+      "reason": "Square 1:1 canvas. No square real render exists. Left out rather than faked."
+    }
+  ],
+  "premium_review": "No frame in this pack is called premium. Premium review is still required: Saeed must look at each image at export size and judge perspective, shadows, depth, and scene, and no frame is called premium until he approves it in plain words.",
+  "sources_note": "Only the real renders in the source folder were used. No schematic sheet, no competitor screenshot, no Hey Morning Studio image, no Productive Penguin Co image, no invented tab count, price, review, or claim."
+}
