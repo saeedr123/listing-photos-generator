@@ -3,4 +3,4 @@
 # Usage: ./run-tests.sh  (from ~/workspace/listing-studio)
 set -e
 cd "$(dirname "$0")/.."
-node --test tests/template-distinctness.test.mjs tests/mockup-fit.test.mjs tests/rendering.test.mjs tests/reconciliation.test.mjs tests/export.test.mjs
+node --test tests/template-distinctness.test.mjs tests/mockup-fit.test.mjs tests/rendering.test.mjs tests/reconciliation.test.mjs tests/export.test.mjs tests/real-pack.test.mjs
