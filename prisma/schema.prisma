@@ -50,6 +50,7 @@ model User {
   admin_audit_logs                      AdminAuditLog[]
   product_renders_crop_approved         ProductRender[]           @relation("ProductRenderCropApprover")
   listing_pack_copy_versions_created    ListingPackCopyVersion[]  @relation("ListingPackCopyVersionCreatedBy")
+  pack_versions_created                 PackVersion[]             @relation("PackVersionCreatedBy")
   reconciliation_check_items_overridden ReconciliationCheckItem[] @relation("ReconciliationCheckItemOverrideBy")
   platform_pack_versions_published      PlatformPackVersion[]     @relation("PlatformPackVersionPublishedBy")
   platform_pack_versions_created        PlatformPackVersion[]     @relation("PlatformPackVersionCreatedBy")
@@ -244,6 +245,7 @@ model ListingPack {
   template              Template?             @relation(fields: [template_id], references: [id])
   images                ListingPackImage[]
   copy                  ListingPackCopy?
+  pack_versions         PackVersion[]
   reconciliation_checks ReconciliationCheck[]
   exports               Export[]
   share_links           ShareLink[]
@@ -329,6 +331,27 @@ model ListingPackCopyVersion {
 
   @@unique([listing_pack_copy_id, version_number])
   @@index([listing_pack_copy_id])
+}
+
+// Pack level snapshot of a whole ListingPack. This is not the copy level
+// table above: ListingPackCopyVersion snapshots one ListingPackCopy row,
+// while PackVersion snapshots the whole pack (product facts, copy, images,
+// template and mockup ids). The two tables never share rows, and a version
+// number in one table means nothing in the other.
+model PackVersion {
+  id                 String   @id @default(uuid()) @db.Uuid
+  listing_pack_id    String   @db.Uuid
+  version_number     Int
+  snapshot_json      Json
+  change_note        String?
+  created_by_user_id String   @db.Uuid
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+
+  listing_pack ListingPack @relation(fields: [listing_pack_id], references: [id])
+  created_by   User        @relation("PackVersionCreatedBy", fields: [created_by_user_id], references: [id])
+
+  @@unique([listing_pack_id, version_number])
+  @@index([listing_pack_id])
 }
 
 model ReconciliationCheck {
