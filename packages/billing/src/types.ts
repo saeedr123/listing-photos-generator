@@ -65,6 +65,11 @@ export interface ChangeLogEntry {
 export interface PlansConfig {
   version: number;
   note?: string;
+  // Billing provider name, resolved through the registry in
+  // provider.ts. "stripe_stub" in the shipped config. Null or missing
+  // means the stub. Naming another provider here does not build it;
+  // the provider must also be registered.
+  billing_provider?: string | null;
   plans: PlanConfig[];
   trial: TrialConfig;
   billing: BillingConfig;
