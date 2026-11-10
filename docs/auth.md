@@ -70,6 +70,67 @@ provider `google`, verify the email, and create a session through
 AuthService, the same way the email provider does. It must never
 store a Google token in plain text and must never log one.
 
+## Server login action and first admin seed (local proof only)
+
+Added 2026-11-11. Login is now server auth, not the demo store.
+
+- Code: `apps/web/src/lib/server-auth.ts` builds the singleton
+  AuthService on PrismaAuthProvider. `apps/web/src/app/auth/actions.ts`
+  holds the `loginAction` and `logoutAction` server actions.
+  `apps/web/src/components/AuthForms.tsx` LoginForm calls
+  `loginAction`; the register form still uses the demo store, and
+  register via a server action is a follow-up, not this increment.
+- Delegate resolution: if `DATABASE_URL` is set and a generated
+  PrismaClient can be imported, the service uses that real client.
+  Otherwise it uses the DEVELOPMENT ONLY in memory delegate in
+  server-auth.ts, which implements the full PrismaAuthClient
+  contract (createUser, findUserByEmail, findUserById,
+  verifyCredentials via scrypt, createSession, findSessionByToken,
+  revokeSession, revokeAllSessions, markEmailVerified,
+  changePassword, setRole) with the same PrismaAuthProvider code
+  the real client uses. The in memory delegate loses everything on
+  restart and must never be used as production auth. Its store lives
+  on globalThis, not on the delegate instance, because Next.js
+  bundles server-auth.ts into more than one server chunk (the login
+  action chunk and the admin page chunk each carry their own copy
+  of the module), and a plain instance field would give the action
+  and the layout two different user stores, so a login would never
+  be visible to the admin gate. The LocalStubAuthProvider is not
+  used for server auth at all.
+- `loginAction` verifies credentials through AuthService.login,
+  sets the httpOnly `lpg_session` cookie (secure in production,
+  sameSite lax, path `/`, max age from the session expiry), and
+  redirects to the `next` parameter (default `/dashboard`, same
+  origin paths only). On failure it returns the same generic
+  message, "Email or password is incorrect.", whether the email
+  exists or the password is wrong. `logoutAction` revokes the
+  session through AuthService.logout and clears the cookie.
+- The admin layout (`apps/web/src/app/admin/layout.tsx`) now passes
+  the AuthService from server-auth.ts as the resolver to
+  `getCurrentAdminUser`, and has a sign out form calling
+  `logoutAction`. Middleware stays a cookie presence first layer
+  only: it cannot check the role, because it cannot reach the
+  database from the edge, and AuthService must not be passed into
+  edge middleware. The layout stays authoritative.
+- First admin seed, local proof only: when the delegate is the in
+  memory one, the user store is empty, and both
+  `LPG_SEED_ADMIN_EMAIL` and `LPG_SEED_ADMIN_PASSWORD` are set in
+  env, that admin user is created once on first use (createUser
+  then setRole to admin). No credential is hard coded, committed,
+  or logged anywhere. Unset the vars and no user is seeded.
+- Prisma generate, tried once 2026-11-11: `npx prisma generate`
+  failed with exit code 1, `Error: aborted` with code `ECONNRESET`
+  while downloading engines, after installing `@prisma/client`
+  6.19.3 into package.json. No generated client exists
+  (`node_modules/.prisma` is absent), so no live database test is
+  claimed and the delegate pattern above stands.
+- Tests: `tests/server-auth.test.ts` (login creates a session and
+  getSession resolves the admin user, wrong password fails with the
+  generic message, a forged token resolves to null, logout revokes
+  the session, plus the seed behaviour and the full provider
+  contract). Live server proof:
+  `scripts/verify-server-login.sh`.
+
 ## Still open
 
 - The OAuth code exchange, the Google identity link, and the
