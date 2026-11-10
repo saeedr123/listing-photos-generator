@@ -94,6 +94,79 @@ config/platform-packs/*.json. It never reads the builder standalone
 mirror in packages/builder/src/config.ts. If the mirror and the root
 disagree, the root wins and the mirror must be updated.
 
+## Billing persistence (Prisma store)
+
+Billing records are persisted through
+`packages/billing/src/prisma-billing-store.ts`, not held only in
+session or in memory. `PrismaBillingStore` writes subscriptions,
+trials, entitlements, AI credit ledger rows, and AI usage logs
+through the existing Prisma models Subscription, Trial,
+UserEntitlement, AICreditLedger, and AIUsageLog. `createBillingStore`
+takes a Prisma client for real persistence, or null for the in
+memory store used in tests and local development.
+
+Two mapping gaps are stated in that file and are not hidden:
+SubscriptionState.cancelled_at and card_authorized have no column,
+and TrialState.card_taken and the per trial usage counters have no
+column, so they are not persisted. There is also no RefundRequest
+model in `prisma/schema.prisma`, so a refund request has no Prisma
+table: the store holds it in its log, lists it back, and says so in
+its result. A dedicated refund table needs a schema change, which is
+a coordinator decision.
+
+## Email hook (no provider yet)
+
+Renewal reminders and account emails are records first, and sending
+is a hook in `packages/billing/src/email-hook.ts` that does nothing
+without configured provider credentials. No provider is chosen, no
+email is sent, and no credential value appears in code, config, or
+logs. The exact config a later provider needs, from env only:
+
+- Provider name: `EMAIL_PROVIDER`, or null when no provider is
+  chosen.
+- From address: `EMAIL_FROM_ADDRESS`, or null when not set.
+- API key: the env var named `EMAIL_API_KEY`. Only the var name is
+  recorded. The value is never returned, logged, or written to a
+  file. The config records only whether the var is set.
+
+Until a provider name, a from address, and the API key are all set,
+every send attempt returns sent false with reason
+`no_email_provider_configured`, and the reminder record stays
+unsent so it can be retried. When all three are set but no provider
+implementation is wired in, the attempt returns sent false with
+reason `email_provider_not_implemented`. The provider send step is a
+separate wiring job.
+
+## Feature decisions (three flags, safe defaults)
+
+Three open decisions are held as admin configurable flags in
+`config/feature-decisions.json`, with the safe current default on
+each until Saeed decides otherwise. The reader is
+`packages/billing/src/feature-decisions.ts`.
+
+- `reconciliation_mode`: `flag_only` (default) or `auto_fix`.
+  Flag only means a reconciliation mismatch is flagged for the
+  seller to fix.
+- `trial_shape`: `per_account_7_days_no_card` (default) or
+  `per_listing_pack`. The default matches the trial in
+  `config/plans.json`.
+- `mockup_pricing`: `follow_plan_entitlements` (default) or
+  `free_for_all`. The default matches the mockup gate in the
+  billing entitlements: basic mockups on Free, full library on
+  Premium.
+
+Changing a flag value in that file records the choice; it does not
+by itself build the alternative behaviour. Each alternative is a
+separate build. The exact decision Saeed must make for each flag is
+in `docs/monetization.md` section 10.
+
+Note: these three flags live in config and are not yet wired to the
+feature flags surface in `packages/admin/src/feature-flags.ts`,
+which turns templates, mockups, niche packs, platform packs, and AI
+features on or off by target kind and scope. Wiring them into that
+surface needs a target kind for decision flags, which is an admin
+worker job, not done here.
+
 ## Tests
 
 packages/admin/src/__tests__/admin.test.ts, 7 tests, node:test:
