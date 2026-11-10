@@ -42,6 +42,7 @@ model User {
   share_links                           ShareLink[]
   subscriptions                         Subscription[]
   trials                                Trial[]
+  refund_requests                       RefundRequest[]
   user_entitlements                     UserEntitlement[]
   ai_credit_ledgers                     AICreditLedger[]
   ai_usage_logs                         AIUsageLog[]
@@ -886,6 +887,7 @@ model Subscription {
 
   user User @relation(fields: [user_id], references: [id])
   plan Plan @relation(fields: [plan_id], references: [id])
+  refund_requests RefundRequest[]
 
   @@index([user_id])
   @@index([user_id, status])
@@ -913,6 +915,31 @@ model Trial {
   @@index([user_id])
   @@index([user_id, status])
   @@index([ends_at])
+}
+
+// Refund requests. A request is logged as pending admin review; the
+// stub never pays a refund. status is a plain String, not an enum, so
+// new review outcomes can be added without a schema change. The row id
+// is a database generated UUID, not the "refund_" prefixed id built by
+// requestRefund, which is not a valid UUID. The billing store returns
+// the persisted row id.
+model RefundRequest {
+  id              String    @id @default(uuid()) @db.Uuid
+  user_id         String    @db.Uuid
+  subscription_id String?   @db.Uuid
+  reason          String
+  status          String    @default("pending_admin_review")
+  requested_at    DateTime  @db.Timestamptz(6)
+  policy_text     String
+  note            String
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @updatedAt @db.Timestamptz(6)
+
+  user         User          @relation(fields: [user_id], references: [id])
+  subscription Subscription? @relation(fields: [subscription_id], references: [id])
+
+  @@index([user_id])
+  @@index([requested_at])
 }
 
 // 11. AI usage
