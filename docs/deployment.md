@@ -1,10 +1,10 @@
 # Deployment preparation, Listing Photos Generator
 
-Status: Phase 2, Wave 2. Prepared 2026-11-07, local files only, no
-GitHub push. Nothing here is deployed. No hosting provider is chosen,
-no spending, no live site, no domain purchase. Domain is on hold, do
-not check domain availability and do not buy anything until Ali
-reopens it.
+Status: Phase 2 complete, verified by coordinator 2026-11-07,
+rechecked 2026-11-10. Local files only, no GitHub push. Nothing here
+is deployed. No hosting provider is chosen, no spending, no live
+site, no domain purchase. Domain is on hold, do not check domain
+availability and do not buy anything until Ali reopens it.
 
 Style rule for this file: no em dashes and no en dashes anywhere.
 
@@ -143,34 +143,72 @@ optional comment, reviewed in admin, is planned, not built yet.
 ## Launch checklist
 
 - [ ] Hosting, database, and object storage providers chosen by Ali.
+  Still open 2026-11-10: no provider is chosen.
 - [ ] DATABASE_URL set on a test database first; migration applied
   and Prisma adapters tested against it, not only against test
-  doubles.
-- [ ] /admin gated behind the admin role and tested as a non admin.
+  doubles. Still open 2026-11-10: the migration has not been
+  applied anywhere, and no live or test database exists yet.
+- [x] /admin gated behind the admin role and tested as a non admin.
+  Checked 2026-11-10 by the coordinator on the production server:
+  logged out GET /admin returns 307 to /auth/login?next=%2Fadmin,
+  logged out GET /admin/users returns 307, a forged lpg_session
+  cookie returns 307, and 9 admin gate unit tests pass. The gate
+  fails closed for everyone until the server login action lands;
+  see the separate open item below for real admin access.
+- [ ] Server login action for real admin access: a server login
+  action that sets the lpg_session cookie, a generated Prisma
+  client, and passing an AuthService built on PrismaAuthProvider
+  as the resolver in the admin layout. Still open 2026-11-10:
+  sign in today is the demo store in browser sessionStorage,
+  which server code cannot read.
 - [ ] Premium price, currency, billing interval, Stripe account,
   and VAT treatment decided by Ali and confirmed with his
-  accountant. No price invented.
-- [ ] AI provider chosen and budget cap set by Ali.
+  accountant. No price invented. Still open 2026-11-10: prices
+  stay null placeholders, VAT is null, no Stripe account.
+- [ ] AI provider chosen and budget cap set by Ali. Still open
+  2026-11-10: the AI module is a development stub only, no
+  provider and no key.
 - [ ] Terms, privacy policy, and refund policy final wording
-  approved by Ali with a Czech legal check.
+  approved by Ali with a Czech legal check. Still open
+  2026-11-10: the outlines in this file are placeholders only.
 - [ ] Mockup frame licences decided: which frames are built in
   house, which need a licence, licence source and type recorded
   for each licensed frame. No licence bought until Ali approves.
-- [ ] Full test suite passes, including the production build.
-  (2026-11-07: the production build FAILS because of the parallel
-  AI worker file apps/web/src/components/ai/AiSuggestions.tsx,
-  which imports config/copy-prompts.json that does not exist and
-  config/plans.json on a wrong relative path. That file belongs to
-  the AI worker, not to this work. The build must pass before launch.)
-- [ ] Visitor click through on the production server: home, auth,
+  Still open 2026-11-10: no licence decision is recorded.
+- [x] Full test suite passes, including the production build.
+  Checked 2026-11-07, rechecked 2026-11-10 by the coordinator:
+  211 tests pass, 0 fail (root vitest 34, engine suite 56, node
+  suites 84, auth 13, builder 17, admin 7), full typecheck passes,
+  lint passes, Prisma schema valid, Next build passes. The earlier
+  failure note is removed: the AI worker fixed its imports in
+  apps/web/src/components/ai/AiSuggestions.tsx while still running,
+  config/copy-prompts.json now exists on disk (verified
+  2026-11-10, 5,271 bytes), and the build passes, so that blocker
+  is cleared.
+- [x] Visitor click through on the production server: home, auth,
   dashboard, builder, share, admin, logged out where relevant,
-  mobile viewport, full click through. (2026-11-07: not done on a
-  production server because the build fails, see above. Dev server
-  click through is recorded in docs/feature-status.md.)
+  mobile viewport, full click through. Checked 2026-11-07,
+  rechecked 2026-11-10 by the coordinator: 14 routes return 200
+  (home, auth login and register, dashboard and profile and
+  settings, builder, share, templates hero and features-grid,
+  niches wedding-and-events, platforms Etsy, account, checkout),
+  admin routes return 307 to login for logged out visitors (the
+  gate working, not a failure), a forged session cookie returns
+  307, and a mobile user agent on home returns 200.
 - [ ] Reconciliation fix vs flag, trial shape, and mockup pricing
-  decisions tested with real sellers.
+  decisions tested with real sellers. Still open 2026-11-10:
+  the three decisions are now admin-configurable flags in
+  config/feature-decisions.json with safe defaults standing
+  (flag only, per account 7 day trial, mockups follow plan
+  entitlements), but no decision is recorded and the alternative
+  behaviours are not built.
 - [ ] Etsy pack previewed against a real test listing and enabled
   from draft, with a human visual review of the proof templates
-  before any frame is called premium.
+  before any frame is called premium. Still open 2026-11-10:
+  a real proof pack now exists in tests/proof-output/real-pack/
+  (4 images from real Maid of Honor renders, sRGB ICC embedded),
+  but image 04 has a blank white tablet screen, 6 templates have
+  no real proof, and human visual review is still required. No
+  frame is called premium.
 - [ ] Domain reopened by Ali, or launch stays on the placeholder
-  domain configuration.
+  domain configuration. Still open 2026-11-10: domain is on hold.
