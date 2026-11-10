@@ -39,6 +39,24 @@ export { InMemoryAuditStore, newAuditEvent } from "./audit.ts";
 export type { AuditStore } from "./audit.ts";
 export { LocalStubAuthProvider } from "./stub-provider.ts";
 export type { AuthProvider, StubProviderOptions } from "./stub-provider.ts";
+export {
+  listAuthProviders,
+  registerAuthProvider,
+  resolveAuthProvider,
+} from "./provider-registry.ts";
+export type { AuthProviderFactory } from "./provider-registry.ts";
+export {
+  GOOGLE_CALLBACK_PATH,
+  GoogleProviderStub,
+  googleNotConfiguredMessage,
+  googleNotImplementedMessage,
+  loadGoogleSignInConfig,
+} from "./google-provider.ts";
+export type {
+  GoogleSignInAttempt,
+  GoogleSignInConfig,
+  GoogleSignInError,
+} from "./google-provider.ts";
 export { PrismaAuthProvider } from "./prisma-provider.ts";
 export type { PrismaAuthClient, PrismaSessionRow, PrismaUserRow } from "./prisma-provider.ts";
 export { AuthService } from "./auth-service.ts";
