@@ -8,3 +8,7 @@ build/
 *.log
 .DS_Store
 coverage/
+
+__pycache__/
+*.pyc
+*.tsbuildinfo
