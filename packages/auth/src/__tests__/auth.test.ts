@@ -5,6 +5,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { AuthService } from "../auth-service.ts";
 import { LocalStubAuthProvider } from "../stub-provider.ts";
+import { GOOGLE_CALLBACK_PATH, GoogleProviderStub, loadGoogleSignInConfig } from "../google-provider.ts";
 import { defaultAuthConfig } from "../config.ts";
 import { hashPassword, verifyPassword } from "../password.ts";
 import { RateLimiter } from "../rate-limit.ts";
@@ -137,4 +138,52 @@ test("rate limiter allows again after reset", async () => {
   assert.equal((await limiter.check(key, 3, 60)).allowed, false);
   await limiter.reset(key);
   assert.equal((await limiter.check(key, 3, 60)).allowed, true);
+});
+
+test("google sign-in placeholder: disabled without client id and secret, with a clear not configured error", () => {
+  const config = loadGoogleSignInConfig({});
+  assert.equal(config.clientId, null);
+  assert.equal(config.clientSecretSet, false);
+  assert.equal(config.enabled, false);
+  assert.equal(config.callbackPath, "/auth/google/callback");
+  assert.equal(GOOGLE_CALLBACK_PATH, "/auth/google/callback");
+  const stub = new GoogleProviderStub(config);
+  assert.equal(stub.isConfigured(), false);
+  const begin = stub.beginSignIn();
+  assert.equal(begin.ok, false);
+  assert.equal(begin.error, "google_not_configured");
+  assert.match(begin.message, /GOOGLE_CLIENT_ID/);
+  assert.match(begin.message, /GOOGLE_CLIENT_SECRET/);
+  assert.match(begin.message, /\/auth\/google\/callback/);
+  const callback = stub.handleCallback("code-from-google");
+  assert.equal(callback.ok, false);
+  assert.equal(callback.error, "google_not_configured");
+});
+
+test("google sign-in placeholder: still refuses when both values are set, because the exchange is not built", () => {
+  const config = loadGoogleSignInConfig({
+    GOOGLE_CLIENT_ID: "placeholder-client-id-not-a-real-id",
+    GOOGLE_CLIENT_SECRET: "placeholder-not-a-real-secret",
+  });
+  assert.equal(config.enabled, true);
+  assert.equal(config.clientSecretSet, true);
+  // Only the presence of the secret is recorded, never its value.
+  assert.ok(!("clientSecret" in config));
+  const stub = new GoogleProviderStub(config);
+  assert.equal(stub.isConfigured(), true);
+  const begin = stub.beginSignIn();
+  assert.equal(begin.ok, false);
+  assert.equal(begin.error, "google_not_implemented");
+  assert.match(begin.message, /not implemented yet/);
+  const callback = stub.handleCallback("code-from-google");
+  assert.equal(callback.ok, false);
+  assert.equal(callback.error, "google_not_implemented");
+});
+
+test("google sign-in placeholder: no network call and no real credential in source", async () => {
+  const { readFileSync } = await import("node:fs");
+  const source = readFileSync(new URL("../google-provider.ts", import.meta.url).pathname, "utf8");
+  assert.ok(!source.includes("fetch("));
+  assert.ok(!source.includes("accounts.google.com"));
+  assert.ok(!source.includes("oauth2.googleapis.com"));
 });
