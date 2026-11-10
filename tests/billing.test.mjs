@@ -8,24 +8,38 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   BillingError,
+  InMemoryBillingStore,
+  PrismaBillingStore,
   StripeStubProvider,
   annualSaving,
   buildBillingTerms,
   buildInvoiceDraft,
+  buildRenewalReminderEmail,
   canCreatePack,
   canDownloadPack,
   canEditPack,
   canViewPack,
   cancelSubscription,
+  createBillingStore,
+  createEmailHook,
+  describeEmailConfig,
   expireTrial,
   getVatTreatment,
   hasAccessUntilPeriodEnd,
+  loadEmailHookConfig,
+  loadFeatureDecisions,
   loadPlansConfig,
+  mockupPricing,
   newFreeAccount,
+  reconciliationMode,
   recordEntitlementChange,
   requestRefund,
   scheduleRenewalReminder,
+  scheduleTrialEndReminder,
+  sendReminderEmail,
   startTrial,
+  trialShape,
+  validateFeatureDecisions,
 } from "../packages/billing/src/index.ts";
 
 const NOW = "2026-11-07T00:00:00.000Z";
@@ -349,5 +363,409 @@ describe("billing: VAT, reminders, refunds, change log", () => {
     assert.equal(next.change_log.length, 1);
     assert.equal(config.version, 1);
     assert.equal(config.change_log.length, 0);
+  });
+});
+
+describe("billing: Prisma store with a fake Prisma client", () => {
+  function makeFakePrismaClient() {
+    const subs = [];
+    const trials = [];
+    const ents = [];
+    const ledgers = [];
+    const usage = [];
+    let n = 0;
+    const nextId = (prefix) => prefix + String(++n);
+    const stamp = () => new Date("2026-11-07T00:00:00.000Z");
+    const byUserDesc = (rows, userId) =>
+      rows.filter((row) => row.user_id === userId).sort((a, b) => b.created_at - a.created_at);
+    return {
+      subscription: {
+        findMany: async ({ where }) => byUserDesc(subs, where.user_id),
+        create: async ({ data }) => {
+          const row = { id: nextId("sub_"), ...data, created_at: stamp(), updated_at: stamp() };
+          subs.push(row);
+          return row;
+        },
+        update: async ({ where, data }) => {
+          const row = subs.find((entry) => entry.id === where.id);
+          Object.assign(row, data, { updated_at: stamp() });
+          return row;
+        },
+      },
+      trial: {
+        findMany: async ({ where }) => byUserDesc(trials, where.user_id),
+        create: async ({ data }) => {
+          const row = { id: nextId("trial_"), ...data, created_at: stamp(), updated_at: stamp() };
+          trials.push(row);
+          return row;
+        },
+        update: async ({ where, data }) => {
+          const row = trials.find((entry) => entry.id === where.id);
+          Object.assign(row, data, { updated_at: stamp() });
+          return row;
+        },
+      },
+      userEntitlement: {
+        create: async ({ data }) => {
+          const row = { id: nextId("ent_"), ...data, created_at: stamp(), updated_at: stamp() };
+          ents.push(row);
+          return row;
+        },
+        findMany: async ({ where }) => byUserDesc(ents, where.user_id),
+      },
+      aICreditLedger: {
+        findUnique: async ({ where }) => {
+          const key = where.user_id_period_start_period_end;
+          return ledgers.find(
+            (row) =>
+              row.user_id === key.user_id &&
+              row.period_start.getTime() === key.period_start.getTime() &&
+              row.period_end.getTime() === key.period_end.getTime(),
+          ) ?? null;
+        },
+        create: async ({ data }) => {
+          const row = { id: nextId("ledger_"), ...data, created_at: stamp(), updated_at: stamp() };
+          ledgers.push(row);
+          return row;
+        },
+        update: async ({ where, data }) => {
+          const row = ledgers.find((entry) => entry.id === where.id);
+          Object.assign(row, data, { updated_at: stamp() });
+          return row;
+        },
+      },
+      aIUsageLog: {
+        create: async ({ data }) => {
+          const row = { id: nextId("aiuse_"), ...data, created_at: stamp() };
+          usage.push(row);
+          return row;
+        },
+        findMany: async ({ where }) => byUserDesc(usage, where.user_id),
+      },
+    };
+  }
+
+  function makePrismaStore() {
+    return new PrismaBillingStore(makeFakePrismaClient(), {
+      planIdBySlug: { free: "plan-free", premium: "plan-premium" },
+      planSlugById: { "plan-free": "free", "plan-premium": "premium" },
+    });
+  }
+
+  it("persists and reads back a subscription, with the documented mapping gap", async () => {
+    const store = makePrismaStore();
+    assert.equal(await store.getSubscription("user-20"), null);
+    const saved = await store.saveSubscription("user-20", {
+      id: "sub-20",
+      plan_slug: "premium",
+      billing_interval: "monthly",
+      status: "active",
+      current_period_start: "2026-11-01T00:00:00.000Z",
+      current_period_end: "2026-12-01T00:00:00.000Z",
+      cancel_at_period_end: false,
+      cancelled_at: "2026-11-07T00:00:00.000Z",
+      card_authorized: true,
+      provider: "stripe_stub",
+      provider_subscription_id: "stub_subscription_20",
+    });
+    assert.equal(saved.plan_slug, "premium");
+    assert.equal(saved.status, "active");
+    assert.equal(saved.current_period_end, "2026-12-01T00:00:00.000Z");
+    // Documented gap: no cancelled_at or card_authorized column exists
+    // in the Subscription model, so they read back as null and false.
+    assert.equal(saved.cancelled_at, null);
+    assert.equal(saved.card_authorized, false);
+    const again = await store.getSubscription("user-20");
+    assert.equal(again.plan_slug, "premium");
+    assert.equal(again.provider_subscription_id, "stub_subscription_20");
+  });
+
+  it("persists and reads back a trial and an entitlement", async () => {
+    const store = makePrismaStore();
+    const trial = await store.saveTrial(
+      "user-21",
+      {
+        plan_slug: "premium",
+        starts_at: NOW,
+        ends_at: "2026-11-14T00:00:00.000Z",
+        status: "active",
+        requires_card: false,
+        card_taken: false,
+        ai_credits_used: 0,
+        exports_used: 0,
+        packs_created: 0,
+      },
+      { ai_credit_allowance: null, export_allowance: null, listing_pack_allowance: null },
+    );
+    assert.equal(trial.status, "active");
+    assert.equal(trial.ends_at, "2026-11-14T00:00:00.000Z");
+    const granted = await store.grantEntitlement({
+      userId: "user-21",
+      entitlementKey: "max_listing_packs",
+      limitValueNumber: 5,
+      grantedByUserId: "admin-1",
+      grantedReason: "Test grant, not a real entitlement.",
+    });
+    assert.equal(granted.entitlement_key, "max_listing_packs");
+    assert.equal(granted.limit_value_number, 5);
+    const listed = await store.listEntitlements("user-21");
+    assert.equal(listed.length, 1);
+    assert.equal(listed[0].id, granted.id);
+  });
+
+  it("records AI usage in the ledger and the usage log, accumulating credits used", async () => {
+    const store = makePrismaStore();
+    const first = await store.recordAiUsage({
+      userId: "user-22",
+      operation: "title",
+      creditsConsumed: 1,
+      periodStartIso: "2026-11-01T00:00:00.000Z",
+      periodEndIso: "2026-12-01T00:00:00.000Z",
+      creditsGranted: 10,
+      provider: "development-stub",
+      status: "suggestion",
+    });
+    assert.equal(first.balance.credits_used, 1);
+    assert.equal(first.balance.credits_remaining, 9);
+    assert.equal(first.usage.operation, "title");
+    const second = await store.recordAiUsage({
+      userId: "user-22",
+      operation: "description",
+      creditsConsumed: 1,
+      periodStartIso: "2026-11-01T00:00:00.000Z",
+      periodEndIso: "2026-12-01T00:00:00.000Z",
+      provider: "development-stub",
+      status: "suggestion",
+    });
+    assert.equal(second.balance.credits_used, 2);
+    assert.equal(second.balance.credits_remaining, 8);
+    const balance = await store.getAiCreditBalance("user-22", "2026-11-01T00:00:00.000Z", "2026-12-01T00:00:00.000Z");
+    assert.equal(balance.credits_used, 2);
+    const logs = await store.listAiUsage("user-22");
+    assert.equal(logs.length, 2);
+  });
+
+  it("holds a refund request in the store log and says it is not in a Prisma table", async () => {
+    const store = makePrismaStore();
+    const log = [];
+    const request = requestRefund(testConfig(), newFreeAccount("user-23"), "Charged after I cancelled.", NOW, log);
+    const saved = await store.saveRefundRequest(request);
+    assert.equal(saved.persisted, false);
+    assert.equal(saved.persisted_via, "store_log_only");
+    assert.match(saved.note, /No RefundRequest model exists/);
+    const listed = await store.listRefundRequests("user-23");
+    assert.equal(listed.length, 1);
+    assert.equal(listed[0].id, request.id);
+    assert.equal(listed[0].status, "pending_admin_review");
+  });
+
+  it("assembles an account billing state from the stored rows", async () => {
+    const store = makePrismaStore();
+    await store.saveSubscription("user-24", {
+      id: "sub-24",
+      plan_slug: "premium",
+      billing_interval: "monthly",
+      status: "active",
+      current_period_start: "2026-11-01T00:00:00.000Z",
+      current_period_end: "2026-12-01T00:00:00.000Z",
+      cancel_at_period_end: false,
+      cancelled_at: null,
+      card_authorized: false,
+      provider: "stripe_stub",
+      provider_subscription_id: null,
+    });
+    const state = await store.getAccountBillingState("user-24", {
+      packs_created: 2,
+      ai_credits_used_this_month: 3,
+      exports_used_this_trial: 0,
+      trials_used: 0,
+    });
+    assert.equal(state.plan_slug, "premium");
+    assert.equal(state.packs_created, 2);
+    assert.equal(state.subscription.status, "active");
+    assert.equal(state.trial, null);
+  });
+
+  it("refuses to save a subscription when the plan id cannot be resolved", async () => {
+    const store = new PrismaBillingStore(makeFakePrismaClient(), {});
+    await assert.rejects(
+      () =>
+        store.saveSubscription("user-25", {
+          id: "sub-25",
+          plan_slug: "premium",
+          billing_interval: "monthly",
+          status: "active",
+          current_period_start: null,
+          current_period_end: null,
+          cancel_at_period_end: false,
+          cancelled_at: null,
+          card_authorized: false,
+          provider: "stripe_stub",
+          provider_subscription_id: null,
+        }),
+      (error) => error instanceof BillingError && error.code === "plan_id_not_resolved",
+    );
+  });
+});
+
+describe("billing: in memory store from createBillingStore(null)", () => {
+  it("persists a subscription and AI usage without a live database", async () => {
+    const store = createBillingStore(null);
+    assert.ok(store instanceof InMemoryBillingStore);
+    await store.saveSubscription("user-26", {
+      id: "sub-26",
+      plan_slug: "free",
+      billing_interval: null,
+      status: "active",
+      current_period_start: null,
+      current_period_end: null,
+      cancel_at_period_end: false,
+      cancelled_at: null,
+      card_authorized: false,
+      provider: "stripe_stub",
+      provider_subscription_id: null,
+    });
+    const found = await store.getSubscription("user-26");
+    assert.equal(found.plan_slug, "free");
+    const used = await store.recordAiUsage({
+      userId: "user-26",
+      operation: "tags",
+      creditsConsumed: 1,
+      periodStartIso: "2026-11-01T00:00:00.000Z",
+      periodEndIso: "2026-12-01T00:00:00.000Z",
+      creditsGranted: 5,
+    });
+    assert.equal(used.balance.credits_used, 1);
+    assert.equal(used.balance.credits_remaining, 4);
+  });
+});
+
+describe("billing: email hook with no provider configured", () => {
+  it("loads an unconfigured hook from an empty env and sends nothing", () => {
+    const config = loadEmailHookConfig({});
+    assert.equal(config.provider, null);
+    assert.equal(config.fromAddress, null);
+    assert.equal(config.apiKeyEnvVar, "EMAIL_API_KEY");
+    assert.equal(config.apiKeySet, false);
+    assert.equal(config.configured, false);
+    const hook = createEmailHook(config);
+    const attempt = hook.send({
+      kind: "account_notice",
+      to: "seller@example.com",
+      subject: "Test",
+      text: "Test.",
+    });
+    assert.equal(attempt.sent, false);
+    assert.equal(attempt.reason, "no_email_provider_configured");
+    assert.equal(attempt.messageId, null);
+    assert.match(describeEmailConfig(config), /Email is not configured/);
+    assert.match(describeEmailConfig(config), /EMAIL_PROVIDER/);
+    assert.match(describeEmailConfig(config), /EMAIL_FROM_ADDRESS/);
+    assert.match(describeEmailConfig(config), /EMAIL_API_KEY/);
+  });
+
+  it("builds a renewal reminder email as a record and leaves it unsent with no provider", () => {
+    const subscription = {
+      id: "sub-27",
+      plan_slug: "premium",
+      billing_interval: "monthly",
+      status: "active",
+      current_period_start: "2026-11-01T00:00:00.000Z",
+      current_period_end: "2026-12-01T00:00:00.000Z",
+      cancel_at_period_end: false,
+      cancelled_at: null,
+      card_authorized: true,
+      provider: "stripe_stub",
+      provider_subscription_id: "stub_subscription_27",
+    };
+    const reminder = scheduleRenewalReminder("user-27", subscription, 7, NOW);
+    const hook = createEmailHook(loadEmailHookConfig({}));
+    const email = buildRenewalReminderEmail(reminder, {
+      to: "seller@example.com",
+      renewalDateText: "2026-12-01",
+      priceText: "Price not set yet",
+      cancelMethodText: "Cancel any time in your account.",
+    });
+    assert.equal(email.kind, "renewal_reminder");
+    assert.match(email.text, /2026-12-01/);
+    assert.match(email.text, /Price not set yet/);
+    const outcome = sendReminderEmail(hook, reminder, email);
+    assert.equal(outcome.attempt.sent, false);
+    assert.equal(outcome.reminder.sent, false);
+    assert.equal(outcome.reminder.status, "scheduled");
+  });
+
+  it("builds a trial end reminder email stating the plan returns to Free with no charge", () => {
+    const config = testConfig();
+    const started = startTrial(config, newFreeAccount("user-28"), NOW);
+    const reminder = scheduleTrialEndReminder("user-28", started.trial, 1, NOW);
+    const hook = createEmailHook(loadEmailHookConfig({}));
+    const outcome = sendReminderEmail(
+      hook,
+      reminder,
+      {
+        kind: "trial_end_reminder",
+        to: "seller@example.com",
+        subject: "Your trial ends on 2026-11-14",
+        text: "Your trial ends on 2026-11-14. Your plan returns to Free. No charge happens without clear authorization.",
+      },
+    );
+    assert.equal(outcome.attempt.sent, false);
+    assert.equal(outcome.reminder.sent, false);
+  });
+
+  it("returns not implemented, not sent, when a provider is named but no send step exists", () => {
+    const config = loadEmailHookConfig({
+      EMAIL_PROVIDER: "example-provider",
+      EMAIL_FROM_ADDRESS: "noreply@example.com",
+      EMAIL_API_KEY: "placeholder-not-a-real-key",
+    });
+    assert.equal(config.configured, true);
+    const hook = createEmailHook(config);
+    const attempt = hook.send({
+      kind: "renewal_reminder",
+      to: "seller@example.com",
+      subject: "Renewal",
+      text: "Renewal.",
+    });
+    assert.equal(attempt.sent, false);
+    assert.equal(attempt.reason, "email_provider_not_implemented");
+  });
+});
+
+describe("billing: feature decisions hold the safe defaults", () => {
+  it("loads flag only, per account trial, and plan entitlements from config", () => {
+    const config = loadFeatureDecisions();
+    assert.equal(reconciliationMode(config), "flag_only");
+    assert.equal(trialShape(config), "per_account_7_days_no_card");
+    assert.equal(mockupPricing(config), "follow_plan_entitlements");
+    for (const decision of config.decisions) {
+      assert.equal(decision.current, decision.default);
+      assert.equal(decision.status, "awaiting_owner_decision");
+      assert.equal(decision.decided_by, null);
+    }
+  });
+
+  it("rejects a decision value that is not one of its options", () => {
+    const bad = {
+      version: 1,
+      decisions: [
+        {
+          key: "reconciliation_mode",
+          name: "Reconciliation",
+          current: "invented_value",
+          default: "flag_only",
+          options: ["flag_only", "auto_fix"],
+          status: "awaiting_owner_decision",
+          decision_needed: "Test.",
+          decided_by: null,
+          decided_date: null,
+        },
+      ],
+    };
+    assert.throws(
+      () => validateFeatureDecisions(bad),
+      (error) => error instanceof BillingError && error.code === "feature_decisions_invalid",
+    );
   });
 });
