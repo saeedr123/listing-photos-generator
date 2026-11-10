@@ -2,6 +2,8 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { adminLoginUrl, decideAdminAccess, getCurrentAdminUser } from "@/lib/admin-gate";
+import { getServerAuthService } from "@/lib/server-auth";
+import { logoutAction } from "../auth/actions";
 
 const links = [
   ["Overview", "/admin"],
@@ -20,15 +22,15 @@ const links = [
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  // Server side gate. No resolver is passed yet: there is no server
-  // login action setting the lpg_session cookie, and no generated
-  // PrismaClient in this repo yet, so getCurrentAdminUser returns null
-  // and the gate fails closed. When server login lands, pass an
-  // AuthService built on PrismaAuthProvider here as the resolver; the
-  // decision below does not change. Do not pass the demo store here:
-  // it keeps its session in browser storage, which server code cannot
-  // read and must not trust.
-  const user = await getCurrentAdminUser(cookies(), null);
+  // Server side gate. The resolver is the singleton AuthService from
+  // server-auth.ts, built on PrismaAuthProvider. The login action in
+  // ../auth/actions.ts sets the lpg_session cookie it resolves here,
+  // so a signed in admin now passes the gate and a forged or stale
+  // cookie is still refused. Do not pass the demo store here: it keeps
+  // its session in browser storage, which server code cannot read and
+  // must not trust.
+  const authService = await getServerAuthService();
+  const user = await getCurrentAdminUser(cookies(), authService);
   const access = decideAdminAccess(user);
   if (!access.allowed && access.reason === "signed_out") {
     redirect(adminLoginUrl("/admin"));
@@ -55,6 +57,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link key={href} href={href} className="rounded border border-slate-300 px-3 py-1 hover:bg-slate-50">{label}</Link>
         ))}
       </nav>
+      <form action={logoutAction} className="mt-4">
+        <button type="submit" className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-50">Sign out</button>
+      </form>
       <div className="mt-6">{children}</div>
     </div>
   );
