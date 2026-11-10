@@ -26,6 +26,7 @@ import { buildRenderModel } from "../../rendering/src/layout.ts";
 import { renderSvg, toRenderSpec } from "../../rendering/src/svg.ts";
 import { reconcile, type ListingValues } from "./reconciliation.ts";
 import { runQualityGate } from "./quality-gate.ts";
+import { readIccProfile, ICC_PROFILE_NAME } from "./icc.ts";
 import { buildTextPack, renderTextPackPlain } from "./text-pack.ts";
 import {
   ExportError,
@@ -68,6 +69,11 @@ export interface ExportedImage {
   shortestSidePx: number;
   format: string;
   colourProfile: string;
+  // sRGB ICC profile embedded in the JPG file itself, proved by reading
+  // the file bytes back, never by trusting a config flag.
+  iccProfile: string;
+  iccProfileEmbedded: boolean;
+  iccVerification: string;
 }
 
 export interface ExportManifest {
@@ -78,6 +84,10 @@ export interface ExportManifest {
   textPackFile: string;
   colourProfile: string;
   format: string;
+  // sRGB ICC profile embedded in every exported JPG, proved from the
+  // file bytes. The per image fields carry the same proof per file.
+  iccProfile: string;
+  iccVerification: string;
   sampleRender: boolean;
   proofMode: boolean;
   reconciliationSummary: string;
@@ -172,6 +182,16 @@ export function exportPack(input: ExportInput): ExportResult {
       if (raster.status !== 0 || !existsSync(jpgPath)) {
         throw rasterizerError(raster.stderr || raster.stdout || "rasterizer exited without writing a JPG.");
       }
+      // Prove the sRGB ICC profile is really in the JPG bytes. A missing
+      // or invalid profile blocks the export, so a pack can never ship
+      // claiming sRGB while the file carries no profile.
+      const icc = readIccProfile(readFileSync(jpgPath));
+      if (!icc.present) {
+        throw rasterizerError(
+          `Export stopped: ${baseName}.jpg has no valid sRGB ICC profile. ${icc.detail}`,
+        );
+      }
+      const iccVerification = `${icc.detail} Read back from ${baseName}.jpg bytes.`;
       images.push({
         position,
         templateId: template.id,
@@ -181,6 +201,9 @@ export function exportPack(input: ExportInput): ExportResult {
         shortestSidePx: Math.min(model.canvasWidthPx, model.canvasHeightPx),
         format: input.pack.export.format,
         colourProfile: input.pack.export.colourProfile,
+        iccProfile: ICC_PROFILE_NAME,
+        iccProfileEmbedded: true,
+        iccVerification,
       });
     });
 
@@ -195,6 +218,10 @@ export function exportPack(input: ExportInput): ExportResult {
       textPackFile: "text-pack.txt",
       colourProfile: input.pack.export.colourProfile,
       format: input.pack.export.format,
+      iccProfile: ICC_PROFILE_NAME,
+      iccVerification:
+        `Every exported JPG embeds the ${ICC_PROFILE_NAME} profile as a JPEG APP2 ICC segment, ` +
+        `proved by reading each file bytes back after rasterizing. See iccVerification on each image.`,
       sampleRender,
       proofMode: input.proofMode,
       reconciliationSummary: reconciliation.summary,
