@@ -47,5 +47,7 @@ export { builderPackToDbRows, dbRowsToBuilderPack } from "./db-adapter.ts";
 export type { DbPackInput, DbPackRows, ListingPackCopyRow, ListingPackImageRow, ListingPackRow, PlatformResolution, ProductRow, VerifiedFactRow } from "./db-adapter.ts";
 export { PrismaPackStore } from "./prisma-pack-store.ts";
 export type { PrismaPackClient, PrismaPackStoreOptions } from "./prisma-pack-store.ts";
+export { PrismaPackVersionStore } from "./pack-version-store.ts";
+export type { PackVersionClient } from "./pack-version-store.ts";
 export { createRealExportRunner } from "./export-runner.ts";
 export type { ExportRunnerResult as RealExportRunnerResult, RealExportRunnerOptions } from "./export-runner.ts";
