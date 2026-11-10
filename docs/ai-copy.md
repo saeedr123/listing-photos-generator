@@ -146,6 +146,27 @@ count, not a price.
 Helpers: `getCreditLimit`, `getTrialCreditAllowance`, `canUseCredit`,
 `creditsRemaining`, `formatCreditDisplay`.
 
+## Production generation gate
+
+`aiGenerationGate` in `packages/ai/src/credits.ts` is the production
+gate for AI generation. Generation is allowed only when both parts
+are in place: a real provider is configured, and the monthly credit
+limit is set in admin and not yet reached. It returns allowed false
+with a plain reason in three cases:
+
+- `credit_limit_not_set`: the monthly credit limit is null in admin.
+- `provider_not_configured`: no AI provider is chosen yet.
+- `credit_limit_reached`: the monthly credit count is used up.
+
+Production wiring must call this gate before `generateCopy` and must
+refuse generation when it returns allowed false. The gate is
+separate from `generateCopy` on purpose: `generateCopy` still runs
+the local development stub when no provider is chosen, so local work
+and the existing tests keep working. The development stub is local
+work only and must never be presented as a real AI provider. No
+credit count and no provider is invented by the gate; both come from
+config and admin.
+
 ## Niche packs
 
 Version 1 ships exactly 3 packs, in `config/niche-packs.json`, version 2:
