@@ -7,16 +7,14 @@
 //   for the admin role; they are reused here, not rewritten.
 // - The current user comes from the lpg_session cookie, resolved through
 //   an AuthService (getCurrentAdminUser). AuthService returns a plain
-//   session token once, at sign in; the server login action must set it
-//   as a secure, HttpOnly cookie named lpg_session. That server login
-//   action does not exist yet: sign in today is the demo store, which
-//   keeps its session in browser sessionStorage, so no server code can
-//   read it. Until the server login lands, the admin layout passes no
-//   resolver, getCurrentAdminUser returns null, and the gate fails
-//   closed: every visitor is treated as signed out and redirected to
-//   /auth/login. That is deliberate. A gate that let demo users through
-//   would be a gate that trusts browser storage, which is not
-//   authentication.
+//   session token once, at sign in; the server login action in
+//   apps/web/src/app/auth/actions.ts sets it as a secure, HttpOnly
+//   cookie named lpg_session, and the admin layout passes the
+//   AuthService from apps/web/src/lib/server-auth.ts as the resolver.
+//   The gate still fails closed when there is no resolver, no cookie,
+//   or an unknown session: every such visitor is treated as signed out
+//   and redirected to /auth/login. A gate that trusted browser storage
+//   would not be authentication, so the demo store is never a resolver.
 // - Middleware (apps/web/src/middleware.ts) is only a first layer: it
 //   redirects /admin requests with no lpg_session cookie at all. It
 //   cannot check the role, because it cannot reach the database, so the
