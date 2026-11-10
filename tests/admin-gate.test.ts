@@ -1,8 +1,9 @@
 // Admin gate tests. No live database, no real secrets, no live site.
 // The session resolver is a stub holding one token per user, standing
-// in for AuthService with PrismaAuthProvider. The layout passes no
-// resolver yet (see apps/web/src/lib/admin-gate.ts), so the live server
-// test in docs/local-setup.md covers the logged out redirect, while
+// in for AuthService with PrismaAuthProvider. The admin layout now
+// passes the real AuthService from server-auth.ts as the resolver (see
+// apps/web/src/lib/admin-gate.ts); the live server proof in
+// scripts/verify-server-login.sh covers the logged in admin path, while
 // these tests cover the decision for every signed in role.
 
 import { describe, expect, it } from "vitest";
