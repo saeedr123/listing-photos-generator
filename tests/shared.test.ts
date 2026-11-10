@@ -36,10 +36,10 @@ describe("shared checks", () => {
 });
 
 describe("Prisma schema", () => {
-  it("defines all 44 tables from docs/database-design.md, plus PackVersion", () => {
+  it("defines all 45 tables from docs/database-design.md, plus PackVersion and RefundRequest", () => {
     const schema = readFileSync("prisma/schema.prisma", "utf8");
     const models = schema.match(/^model \w+ \{/gm) ?? [];
-    expect(models).toHaveLength(44);
+    expect(models).toHaveLength(45);
     for (const name of [
       "User",
       "Product",
@@ -60,6 +60,7 @@ describe("Prisma schema", () => {
       "CopyPromptVersion",
       "Plan",
       "Trial",
+      "RefundRequest",
     ]) {
       expect(schema).toContain(`model ${name} {`);
     }
