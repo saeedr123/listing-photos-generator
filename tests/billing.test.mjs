@@ -373,11 +373,16 @@ describe("billing: Prisma store with a fake Prisma client", () => {
     const ents = [];
     const ledgers = [];
     const usage = [];
+    const refunds = [];
     let n = 0;
     const nextId = (prefix) => prefix + String(++n);
     const stamp = () => new Date("2026-11-07T00:00:00.000Z");
     const byUserDesc = (rows, userId) =>
       rows.filter((row) => row.user_id === userId).sort((a, b) => b.created_at - a.created_at);
+    const refundsByUserDesc = (userId) =>
+      refunds
+        .filter((row) => row.user_id === userId)
+        .sort((a, b) => b.requested_at.getTime() - a.requested_at.getTime());
     return {
       subscription: {
         findMany: async ({ where }) => byUserDesc(subs, where.user_id),
@@ -441,6 +446,14 @@ describe("billing: Prisma store with a fake Prisma client", () => {
           return row;
         },
         findMany: async ({ where }) => byUserDesc(usage, where.user_id),
+      },
+      refundRequest: {
+        create: async ({ data }) => {
+          const row = { id: nextId("refund_"), ...data, created_at: stamp(), updated_at: stamp() };
+          refunds.push(row);
+          return row;
+        },
+        findMany: async ({ where }) => refundsByUserDesc(where.user_id),
       },
     };
   }
@@ -545,18 +558,55 @@ describe("billing: Prisma store with a fake Prisma client", () => {
     assert.equal(logs.length, 2);
   });
 
-  it("holds a refund request in the store log and says it is not in a Prisma table", async () => {
+  it("persists a refund request in the RefundRequest table", async () => {
     const store = makePrismaStore();
     const log = [];
     const request = requestRefund(testConfig(), newFreeAccount("user-23"), "Charged after I cancelled.", NOW, log);
     const saved = await store.saveRefundRequest(request);
-    assert.equal(saved.persisted, false);
-    assert.equal(saved.persisted_via, "store_log_only");
-    assert.match(saved.note, /No RefundRequest model exists/);
+    assert.equal(saved.persisted, true);
+    assert.equal(saved.persisted_via, "prisma_refund_request");
+    assert.equal(saved.note, null);
+    // The row id is database generated, not the "refund_" prefixed id
+    // built by requestRefund, which is not a valid UUID.
+    assert.notEqual(saved.request.id, request.id);
+    assert.equal(saved.request.user_id, "user-23");
+    assert.equal(saved.request.status, "pending_admin_review");
+    assert.equal(saved.request.reason, "Charged after I cancelled.");
     const listed = await store.listRefundRequests("user-23");
     assert.equal(listed.length, 1);
-    assert.equal(listed[0].id, request.id);
+    assert.equal(listed[0].id, saved.request.id);
     assert.equal(listed[0].status, "pending_admin_review");
+    assert.equal(listed[0].requested_at, NOW);
+  });
+
+  it("lists refund requests scoped to the requesting user", async () => {
+    const store = makePrismaStore();
+    const log = [];
+    await store.saveRefundRequest(requestRefund(testConfig(), newFreeAccount("user-23"), "Charged after I cancelled.", NOW, log));
+    await store.saveRefundRequest(requestRefund(testConfig(), newFreeAccount("user-24"), "Charged twice.", NOW, log));
+    const mine = await store.listRefundRequests("user-23");
+    assert.equal(mine.length, 1);
+    assert.equal(mine[0].user_id, "user-23");
+    assert.equal(mine[0].reason, "Charged after I cancelled.");
+    const theirs = await store.listRefundRequests("user-24");
+    assert.equal(theirs.length, 1);
+    assert.equal(theirs[0].reason, "Charged twice.");
+    assert.equal((await store.listRefundRequests("user-99")).length, 0);
+  });
+
+  it("lists two requests for the same user in requested_at order", async () => {
+    const store = makePrismaStore();
+    const log = [];
+    const first = requestRefund(testConfig(), newFreeAccount("user-23"), "First request.", "2026-11-07T00:00:00.000Z", log);
+    const second = requestRefund(testConfig(), newFreeAccount("user-23"), "Second request.", "2026-11-08T00:00:00.000Z", log);
+    await store.saveRefundRequest(first);
+    await store.saveRefundRequest(second);
+    const listed = await store.listRefundRequests("user-23");
+    assert.equal(listed.length, 2);
+    assert.equal(listed[0].reason, "Second request.");
+    assert.equal(listed[0].requested_at, "2026-11-08T00:00:00.000Z");
+    assert.equal(listed[1].reason, "First request.");
+    assert.equal(listed[1].requested_at, "2026-11-07T00:00:00.000Z");
   });
 
   it("assembles an account billing state from the stored rows", async () => {
@@ -637,6 +687,26 @@ describe("billing: in memory store from createBillingStore(null)", () => {
     });
     assert.equal(used.balance.credits_used, 1);
     assert.equal(used.balance.credits_remaining, 4);
+  });
+
+  it("persists refund requests in its own in memory table, scoped per user and in requested_at order", async () => {
+    const store = createBillingStore(null);
+    const log = [];
+    const first = await store.saveRefundRequest(requestRefund(testConfig(), newFreeAccount("user-27"), "First request.", NOW, log));
+    assert.equal(first.persisted, true);
+    assert.equal(first.persisted_via, "in_memory_store");
+    assert.equal(first.note, null);
+    const second = await store.saveRefundRequest(
+      requestRefund(testConfig(), newFreeAccount("user-27"), "Second request.", "2026-11-08T00:00:00.000Z", log),
+    );
+    await store.saveRefundRequest(requestRefund(testConfig(), newFreeAccount("user-28"), "Other user.", NOW, log));
+    const listed = await store.listRefundRequests("user-27");
+    assert.equal(listed.length, 2);
+    assert.equal(listed[0].reason, "Second request.");
+    assert.equal(listed[0].id, second.request.id);
+    assert.equal(listed[1].reason, "First request.");
+    assert.equal(listed[1].id, first.request.id);
+    assert.equal((await store.listRefundRequests("user-28")).length, 1);
   });
 });
 
