@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import {
   DevelopmentStubProvider,
+  aiGenerationGate,
   aiLayoutLabel,
   checkClaimText,
   checkKeyword,
@@ -529,5 +530,64 @@ describe("no em dash or en dash in files produced by this work", () => {
       assert.ok(!text.includes(emDash), file);
       assert.ok(!text.includes(enDash), file);
     }
+  });
+});
+
+describe("production generation gate: blocked while the credit limit is null or no provider is configured", () => {
+  const configuredProvider = {
+    provider: "example-provider",
+    model: null,
+    budgetCap: null,
+    budgetCapCurrency: null,
+    creditsPerSuggestion: 1,
+  };
+  const noProvider = {
+    provider: null,
+    model: null,
+    budgetCap: null,
+    budgetCapCurrency: null,
+    creditsPerSuggestion: 1,
+  };
+
+  it("blocks generation when the credit limit is null, even with a provider named", () => {
+    const gate = aiGenerationGate({ used: 0, limit: null, planSlug: "free" }, configuredProvider);
+    assert.equal(gate.allowed, false);
+    assert.equal(gate.code, "credit_limit_not_set");
+    assert.match(gate.reason, /not set in admin yet/);
+  });
+
+  it("blocks generation when no provider is configured, even with a credit limit set", () => {
+    const gate = aiGenerationGate({ used: 0, limit: 10, planSlug: "free" }, noProvider);
+    assert.equal(gate.allowed, false);
+    assert.equal(gate.code, "provider_not_configured");
+    assert.match(gate.reason, /No AI provider is configured/);
+  });
+
+  it("blocks generation when the stated limit is reached, and allows it below the limit with a provider set", () => {
+    const reached = aiGenerationGate({ used: 10, limit: 10, planSlug: "free" }, configuredProvider);
+    assert.equal(reached.allowed, false);
+    assert.equal(reached.code, "credit_limit_reached");
+    const open = aiGenerationGate({ used: 3, limit: 10, planSlug: "free" }, configuredProvider);
+    assert.equal(open.allowed, true);
+    assert.equal(open.code, null);
+  });
+
+  it("blocks generation in the shipped config, where the limit is null and no provider is chosen", async () => {
+    assert.equal(getCreditLimit("free", plans), null);
+    assert.equal(providerConfig.provider, null);
+    const gate = aiGenerationGate({ used: 0, limit: getCreditLimit("free", plans), planSlug: "free" }, providerConfig);
+    assert.equal(gate.allowed, false);
+    assert.equal(gate.code, "credit_limit_not_set");
+    const result = await generateTitle({
+      kind: "title",
+      facts,
+      limits,
+      provider: stub,
+      prompt: getPrompt(prompts, "title"),
+      credits: { used: 0, limit: null, planSlug: "free" },
+      providerConfig,
+      nichePack: null,
+    });
+    assert.equal(result.status, "needs_config");
   });
 });
