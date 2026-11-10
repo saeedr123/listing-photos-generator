@@ -149,4 +149,63 @@ How this product avoids it:
 - Renewal reminder timing: `renewal_reminder_days_before` is null until admin sets it. Reminder sending (real email) is not built; the reminder is a scheduled record only.
 - Server wiring: account and checkout pages use the demo store and browser local storage in this build. Production wiring must read Plan, Subscription, and Trial rows, persist invoice drafts, refund requests, cancel records, and reminder records, and send the renewal reminder. The billing module functions are written to take those rows as plain state objects.
 - Trial eligibility extras: one trial per payment method or per email domain block for abuse are admin options in PROMPT.md section 16 and are not built yet.
-- Trial shape and mockup pricing are open decisions to test with real sellers, per PROMPT.md section 23: whether a 7 day trial, no card, one per account is the right trial for a listing tool, or whether the trial should be per listing pack, and whether mockups should be free for all or a premium feature.
+- Trial shape and mockup pricing are open decisions to test with real sellers, per PROMPT.md section 23: whether a 7 day trial, no card, one per account is the right trial for a listing tool, or whether the trial should be per listing pack, and whether mockups should be free for all or a premium feature. Both are held as admin flags with safe defaults in section 10, and neither is decided here.
+
+## 10. Three decisions for Saeed: admin flags with safe defaults
+
+Three open decisions are built as admin configurable flags in
+`config/feature-decisions.json`, read by
+`packages/billing/src/feature-decisions.ts`. Each flag holds the
+safe current default until Saeed decides otherwise. Changing a flag
+value records the choice; it does not by itself build the
+alternative behaviour, which is a separate build in each case. No
+price, no VAT rate, and no legal wording is set by any flag.
+
+### Reconciliation: flag only or auto fix
+
+- Flag: `reconciliation_mode`. Current value: `flag_only`.
+  Default: `flag_only`. Other option: `auto_fix`.
+- Safe default behaviour: when the reconciliation check finds a
+  mismatch between generated copy and the seller's verified facts,
+  the mismatch is flagged for the seller to fix. Nothing is changed
+  silently.
+- Exact decision needed from Saeed: when a mismatch is found,
+  should the product only flag it for the seller to fix
+  (`flag_only`), or should it auto fix the generated copy to match
+  the verified facts (`auto_fix`)?
+- If he picks `auto_fix`, the auto fix behaviour still has to be
+  built, including what counts as fixable, what is never auto
+  fixed, and how the fix is shown to the seller. The flag alone
+  does not build it.
+
+### Trial shape: per account or per listing pack
+
+- Flag: `trial_shape`. Current value:
+  `per_account_7_days_no_card`. Default:
+  `per_account_7_days_no_card`. Other option: `per_listing_pack`.
+- Safe default behaviour: the trial is 7 days, no card, one per
+  account, matching `config/plans.json` and section 3 above.
+- Exact decision needed from Saeed: is the 7 day, no card, one per
+  account trial the right trial for a listing tool
+  (`per_account_7_days_no_card`), or should the trial be per
+  listing pack, so a seller trials premium features on one pack at
+  a time (`per_listing_pack`)?
+- If he picks `per_listing_pack`, the per pack trial still has to be
+  built, including its length, its allowances, and how it ends. The
+  flag alone does not build it, and the per account trial in
+  section 3 stays in force until then.
+
+### Mockup pricing: plan entitlements or free for all
+
+- Flag: `mockup_pricing`. Current value:
+  `follow_plan_entitlements`. Default:
+  `follow_plan_entitlements`. Other option: `free_for_all`.
+- Safe default behaviour: mockups follow the existing plan
+  entitlements in `canUseMockup`: basic mockups on Free, and the
+  full library including premium frames on Premium.
+- Exact decision needed from Saeed: should mockups follow the plan
+  entitlements (`follow_plan_entitlements`), or should all mockups
+  be free for every seller (`free_for_all`)?
+- If he picks `free_for_all`, the mockup gate still has to be
+  changed to open premium frames to Free. The flag alone does not
+  change the gate, and premium frames stay Premium only until then.
