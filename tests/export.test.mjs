@@ -14,6 +14,8 @@ import {
   buildTextPack,
   exportPack,
   loadEtsyPack,
+  readIccProfile,
+  ICC_PROFILE_NAME,
 } from "../packages/export/src/index.ts";
 import { checkPremium, loadMockups } from "../packages/mockup-engine/src/index.ts";
 
@@ -115,6 +117,52 @@ describe("Etsy export", () => {
       assert.equal(info.width, 3000);
       assert.equal(info.height, 2000);
     }
+  });
+
+  it("every exported JPG embeds an sRGB ICC profile, proved from the file bytes", () => {
+    assert.equal(result.manifest.iccProfile, ICC_PROFILE_NAME);
+    assert.match(result.manifest.iccVerification, /APP2 ICC segment/);
+    for (const image of result.manifest.images) {
+      assert.equal(image.iccProfile, ICC_PROFILE_NAME);
+      assert.equal(image.iccProfileEmbedded, true);
+      assert.match(image.iccVerification, /Read back from .*\.jpg bytes/);
+      const bytes = readFileSync(join(result.outputDir, image.fileName));
+      // Byte level proof, not a config flag: the APP2 ICC segment and
+      // the sRGB tag must both be in the file itself.
+      assert.ok(bytes.includes(Buffer.from("ICC_PROFILE\0", "ascii")), `${image.fileName} has no APP2 ICC segment`);
+      assert.ok(bytes.includes(Buffer.from("sRGB", "ascii")), `${image.fileName} has no sRGB tag`);
+      const icc = readIccProfile(bytes);
+      assert.equal(icc.present, true, `${image.fileName}: ${icc.detail}`);
+      assert.equal(icc.headerValid, true, `${image.fileName}: ${icc.detail}`);
+      assert.equal(icc.profileDescription, ICC_PROFILE_NAME);
+      assert.ok(icc.profileBytes > 1000, `${image.fileName} profile is implausibly small: ${icc.profileBytes} bytes`);
+      // Independent check: Pillow reads the profile back and opens it
+      // as an sRGB profile.
+      const pillow = spawnSync("python3", [
+        "-c",
+        "import sys, io; from PIL import Image, ImageCms; " +
+          "im = Image.open(sys.argv[1]); prof = im.info.get('icc_profile'); " +
+          "assert prof, 'no icc_profile in Pillow info'; " +
+          "print(ImageCms.getProfileName(ImageCms.getOpenProfile(io.BytesIO(prof))))",
+        join(result.outputDir, image.fileName),
+      ], { encoding: "utf8" });
+      assert.equal(pillow.status, 0, pillow.stderr);
+      assert.equal(pillow.stdout.trim(), ICC_PROFILE_NAME);
+    }
+  });
+
+  it("a JPG without an ICC profile fails the ICC byte check", () => {
+    const stripped = spawnSync("python3", [
+      "-c",
+      "import sys; from PIL import Image; im = Image.open(sys.argv[1]); " +
+        "im.save(sys.argv[2], 'JPEG', quality=92)",
+      join(result.outputDir, "01-hero.jpg"),
+      join(result.outputDir, "no-icc.jpg"),
+    ], { encoding: "utf8" });
+    assert.equal(stripped.status, 0, stripped.stderr);
+    const icc = readIccProfile(readFileSync(join(result.outputDir, "no-icc.jpg")));
+    assert.equal(icc.present, false);
+    assert.match(icc.detail, /No ICC_PROFILE APP2 segment/);
   });
 
   it("exports real drawn content, not a blank image, with legible text areas", () => {
