@@ -49,6 +49,16 @@ export function validatePlansConfig(value: unknown): PlansConfig {
   if (!config.billing) {
     throw new BillingError("plans_config_invalid", "Plans config must include a billing section with VAT and refund placeholders.");
   }
+  if (
+    config.billing_provider !== undefined &&
+    config.billing_provider !== null &&
+    typeof config.billing_provider !== "string"
+  ) {
+    throw new BillingError("plans_config_invalid", "Plans config billing_provider must be a provider name string or null.");
+  }
+  if (config.billing_provider === undefined || config.billing_provider === null || config.billing_provider === "") {
+    config.billing_provider = "stripe_stub";
+  }
   return config;
 }
 
