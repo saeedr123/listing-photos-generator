@@ -1,6 +1,10 @@
 # Feature status
 
-Status: Phase 2 foundation, built 2026-11-07, local files only. Tested as described below. Nothing here is live, no spending, no domain, no Stripe, no AI provider.
+Status: gap fill, 2026-11-10, coordinator verified. The Phase 2
+foundation and Wave 2 sections below are kept for history; their
+test results and still open lists are superseded by the gap fill
+section at the end of this file. Nothing here is live, no spending,
+no domain, no Stripe, no AI provider.
 
 ## Built in the Phase 2 foundation
 
@@ -70,3 +74,38 @@ Test results, 2026-11-07:
 - Visitor click through, dev server only: 200 for home, auth, dashboard, builder, share, all admin pages, template, niche, and platform pages, including a fresh server check for /templates/hero and mobile user agent checks for / and /admin/templates. Production server click through NOT done, because the production build fails.
 
 Still open: no live database, /admin not gated, AI prompts have no text yet, no live auth provider or email, no Stripe, no hosting, domain, price, VAT, or legal wording decisions, and the production build must pass before launch.
+
+## Gap fill, 2026-11-10, coordinator verified
+
+Local files only, no GitHub push. Phase 2 v1 core was not rebuilt.
+
+What was filled:
+- Admin gate: middleware plus admin layout gate behind the admin role, reusing isAdmin and canManageAdminContent. Logged out and forged cookie requests return 307 to login. The gate fails closed for everyone until the server login action lands; see still open below.
+- PackVersion table: Prisma model PackVersion, 44 models total, migration 0002_pack_version, adapter in packages/builder/src/pack-version-store.ts, 4 separation tests. Builder saveVersion and listVersions now use PackVersion.
+- sRGB ICC profile: embedded in every exported JPG (6600 bytes, sRGB IEC61966-2.1), verified from file bytes and recorded in the export manifest.
+- Real proof pack: tests/proof-output/real-pack/, 4 images from real Maid of Honor renders, manifest with source file and sha256 per image. No frame is called premium. Image 04 has a blank white tablet screen in its source, recorded as a defect, layout proof only.
+- Billing persistence: PrismaBillingStore through the existing Prisma models, Stripe stub charge always 0, VAT null, prices null.
+- Email hook: records plus a send step that does nothing without configured provider credentials. No email sent.
+- Google sign-in: placeholder only, returns not configured without both env vars and not implemented with both set. No live OAuth.
+- Live database readiness: docker-compose.yml for a local Postgres test database. Migration not applied anywhere here because Docker, Podman, and Postgres binaries are absent in this environment.
+- AI credit gate: blocks when the credit limit is null, when no provider is configured, and when the limit is reached. No credit counts or provider invented.
+- Three Saeed decisions as admin-configurable flags in config/feature-decisions.json with safe defaults: flag only, per account 7 day trial, mockups follow plan entitlements.
+- Provider-agnostic standing rule, 2026-11-10: billing, AI, email, object storage, auth, and hosting are adapters or config choices, swappable without rewriting the builder, templates, mockups, or billing core. Recorded in docs/architecture.md section 9.4. Test tests/billing-provider.test.mjs (9 pass) proves a fake second provider registered through config is called through the interface.
+
+Test results, coordinator run 2026-11-10:
+- Root vitest: 34 pass, 0 fail.
+- Engine suite ./tests/run-tests.sh: 56 pass, 0 fail.
+- Node suites (billing, AI, billing provider, real pack): 84 pass, 0 fail.
+- Auth package: 13 pass, 0 fail. Builder package: 17 pass, 0 fail. Admin package: 7 pass, 0 fail.
+- Total: 211 pass, 0 fail.
+- Full typecheck passes, lint passes, Prisma schema valid, Next build passes.
+- Production click through: 14 routes return 200, admin routes return 307 to login for logged out visitors, forged cookie returns 307, mobile user agent on home returns 200.
+
+Still open after the gap fill:
+- Server login action for real admin access (see PROJECT_STATUS.md).
+- Migration not applied to any database.
+- Refund requests have no Prisma table; held in the store log only.
+- Three decision flags are not wired into the admin flags UI.
+- AI generateCopy still runs the local development stub when called directly; the gate must be called first in production wiring.
+- Proof pack gaps: image 04 blank tablet screen, no portrait mobile-view or square who-it-is-for proof, 6 templates left out, no frame premium until Saeed approves it in plain words.
+- Saeed-only decisions: price, currency, Stripe account, VAT treatment with accountant confirmation, refund policy final wording with a legal check, AI provider choice and budget cap, AI credit counts, hosting and database and storage providers, domain on hold, mockup frame licences, reconciliation fix vs flag, trial shape, mockup pricing, which niche pack converts first.
