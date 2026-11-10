@@ -2,7 +2,7 @@
 // not a hard coded rule. Change the values, not the code, to change behaviour.
 // No price, no platform rule, and no product fact lives in this file.
 
-import type { Edition } from "./types.ts";
+import type { AuthProviderName, Edition } from "./types.ts";
 
 export interface RateLimitRule {
   // Maximum attempts inside the window.
@@ -12,6 +12,13 @@ export interface RateLimitRule {
 }
 
 export interface AuthConfig {
+  // Auth provider name, resolved through the registry in
+  // provider-registry.ts. "email" in the shipped config, meaning the
+  // local stub or the Prisma provider behind the AuthProvider
+  // interface. "sso" names a later single sign on provider, which
+  // must also be registered before it can be resolved. Naming a
+  // provider here does not build it.
+  provider: AuthProviderName;
   // Entry edition recorded on new User rows when the caller does not pass one.
   defaultEdition: Edition;
   // Editions the app accepts. Add an edition here to open a new entry point.
@@ -31,6 +38,7 @@ export interface AuthConfig {
 }
 
 export const defaultAuthConfig: AuthConfig = {
+  provider: "email",
   defaultEdition: "listing-photos-generator",
   allowedEditions: ["listing-photos-generator", "nvconsult"],
   sessionTtlDays: 30,
