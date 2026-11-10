@@ -47,6 +47,33 @@ fixes the source product or the listing fact, then re-runs the check.
 Whether the tool should ever fix a mismatch itself is an open decision
 for Ali (PROMPT.md section 5.3).
 
+## sRGB ICC profile
+
+Every exported JPG embeds a real sRGB ICC profile, proved from the file
+bytes, never from a config flag.
+
+- `packages/export/src/srgb_icc.py` builds the profile bytes in pure
+  Python, stdlib only: ICC v2, display class, RGB input, XYZ PCS, D50
+  white point, sRGB primaries, and the sRGB tone response as a 1024
+  entry curve. Description tag: "sRGB IEC61966-2.1", 6600 bytes. No
+  profile file existed on this machine and no new dependency was added.
+  Pillow opens the built profile and reads its description back as
+  "sRGB IEC61966-2.1".
+- `packages/export/src/rasterize.py` saves every JPG with that profile,
+  so Pillow writes it as a JPEG APP2 ICC segment.
+- `packages/export/src/icc.ts` reads the profile back out of the JPG
+  bytes after rasterizing: it parses the JPEG markers, reassembles the
+  APP2 ICC chunks, and checks the header (acsp, mntr, RGB, XYZ) and the
+  description tag. A missing or invalid profile blocks the export, so a
+  pack can never ship claiming sRGB while the file carries no profile.
+- The export manifest records the profile per image (`iccProfile`,
+  `iccProfileEmbedded`, `iccVerification`) and at pack level
+  (`iccProfile`, `iccVerification`).
+- The export tests prove it from the bytes: the APP2 ICC segment and
+  the sRGB tag must both be in the file, the parsed description must be
+  "sRGB IEC61966-2.1", and Pillow must read the profile back and open it
+  as sRGB. A stripped JPG with no profile fails the same check.
+
 ## Crisp Quality Gate
 
 In `packages/export/src/quality-gate.ts`:
@@ -94,11 +121,11 @@ Known limits of the v1 proof rasterizer:
 
 - The screen content is a schematic drawn from the verified tab names,
   not a real sheet screenshot. A publishable pack must place the seller
-  real product render pixels in that box instead.
-- JPGs are saved in RGB mode, which is sRGB for web JPEG, and the
-  manifest records colour profile sRGB. No ICC profile file is embedded,
-  because no sRGB ICC profile file is present on this machine. Embed a
-  real sRGB ICC profile when the app ships its own profile asset.
+  real product render pixels in that box instead. The real proof pack
+  below does that with the real renders.
+- JPGs are saved in RGB mode with the sRGB ICC profile embedded (see the
+  sRGB ICC profile section above). The manifest records the profile per
+  image and at pack level, with the byte level proof.
 - The rasterizer needs Python 3 with Pillow. If it is missing, export
   fails with a plain language error and the saved pack is preserved.
 
@@ -113,12 +140,26 @@ From `~/workspace/listing-studio`:
 Or directly:
 
 ```
-node --test tests/template-distinctness.test.mjs tests/mockup-fit.test.mjs tests/rendering.test.mjs tests/reconciliation.test.mjs tests/export.test.mjs
+node --test tests/template-distinctness.test.mjs tests/mockup-fit.test.mjs tests/rendering.test.mjs tests/reconciliation.test.mjs tests/export.test.mjs tests/real-pack.test.mjs
 ```
 
 Test outputs are written under `tests/.tmp-export-output/` and removed
 after the run. A durable proof export is kept in
 `tests/proof-output/proof-pack/`.
+
+## Test results, 2026-11-10
+
+Command: `./tests/run-tests.sh`
+
+Result: 56 tests, 56 pass, 0 fail.
+
+- Template distinctness: 9 tests. Mockup fit: 13 tests. Rendering: 8
+  tests. Reconciliation: 6 tests. Export: 15 tests, including the two
+  new sRGB ICC tests (profile proved from the JPG bytes, stripped JPG
+  fails the same check). Real proof pack: 5 tests (builder runs, every
+  image 3000x2000 RGB with an sRGB ICC profile in its bytes, manifest
+  names the source file for every image, no frame called premium, 7
+  templates left out with reasons).
 
 ## Test results, 2026-11-07
 
@@ -166,3 +207,43 @@ and `manifest.json`. The manifest marks `sampleRender: true` and
 `proofMode: true`. Both JPGs were visually inspected: large crisp title,
 legible subtitle, laptop and phone screens with legible tab rows, pill
 bar below, no overlapping text.
+
+## Real proof pack
+
+`tests/proof-output/real-pack/` holds the proof pack built from the REAL
+Maid of Honor Planner renders in
+`workspace/etsy-maid-of-honor/templates-redesigned/`, not the schematic
+sheet. Built by `tests/proof-output/real-pack/build-real-pack.py`
+(Python 3, Pillow, no network), verified by `tests/real-pack.test.mjs`.
+
+Method: each real render is placed whole into a 3000x2000 Etsy canvas
+with contain fit, centred, no stretch, no crop, no colour change. Every
+source is already 3000x2000, so the placement is 1 to 1. The only
+changes from the source file are a JPEG re-save at quality 92 and the
+embedded sRGB ICC profile. The mean absolute pixel difference from
+re-saving is measured per image (0.13 to 0.24 per channel across the
+four images) and recorded in the manifest.
+
+Built (4 images): `01-hero.jpg` (hero, filled laptop plus phone),
+`02-feature-close-up.jpg` (feature close up, Start Here and Guide tab on
+a laptop), `03-what-is-inside.jpg` (what is inside, Home Dashboard
+directory plus Mobile Quick-Expense Log on the phone),
+`04-feature-itinerary.jpg` (feature close up, Itinerary and Event
+Schedules layout, tablet screen blank in the source, recorded as a
+defect, layout proof only).
+
+Left out (7 templates, named with reasons in the manifest, nothing
+faked): bundle-all-tabs, features-grid, final-call-to-action,
+how-it-works, mobile-view (portrait canvas, all real renders are
+landscape), sizes-and-formats, who-it-is-for (square canvas, no square
+real render exists).
+
+`MANIFEST.md` in the same folder records, for every image, the exact
+source file path and sha256, template, mockup shown, facts used, and
+placement, plus the facts for the test product (12 tabs, Google Sheets
+format, USD 13.97 list, USD 9.78 launch, task supplied, not live
+rechecked). It states that no frame in this pack is called premium, what
+Saeed must look at in review (perspective, shadows, depth, scene), and
+that no frame is called premium until he approves it in plain words.
+The earlier schematic proof pack is untouched and stays labelled as a
+schematic layout proof.
