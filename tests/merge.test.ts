@@ -127,9 +127,10 @@ describe("merge (d): Prisma adapters round trip with a test double, no live Post
         upsert: async ({ create }) => { copies.set(String(create["listing_pack_id"]), create); return create; },
         findUnique: async ({ where }) => (copies.get(String(where["listing_pack_id"])) ?? null),
       },
-      listingPackCopyVersion: {
-        create: async ({ data }) => { const row = { ...data, id: "version-1", created_at: new Date() }; versions.push(row); return row; },
-        findMany: async ({ where }) => versions.filter((v) => v["listing_pack_copy_id"] === where["listing_pack_copy_id"]),
+      packVersion: {
+        create: async ({ data }) => { const row = { ...data, id: "pack-version-" + (versions.length + 1), created_at: new Date() }; versions.push(row); return row; },
+        findMany: async ({ where }) => versions.filter((v) => v["listing_pack_id"] === where["listing_pack_id"]).sort((a, b) => Number(a["version_number"]) - Number(b["version_number"])),
+        findUnique: async ({ where }) => (versions.find((v) => v["listing_pack_id"] === where["listing_pack_id_version_number"]?.["listing_pack_id"] && v["version_number"] === where["listing_pack_id_version_number"]?.["version_number"]) ?? null),
       },
       export: { create: async ({ data }) => data, findMany: async () => [] },
       accountDeletionRequest: { create: async ({ data }) => data, findUnique: async () => null, update: async ({ data }) => data },
@@ -145,6 +146,12 @@ describe("merge (d): Prisma adapters round trip with a test double, no live Post
     expect(read?.productFacts.tabCount).toBe(12);
     expect(read?.copy.title).toBe("Maid of Honor Planner, 12 tabs, Google Sheets");
     expect(read?.templateIds).toEqual(["hero"]);
+    // Pack versions now live in the PackVersion table, with the change
+    // note preserved (previously the note was dropped by the copy table).
+    const versionList = await packs.listVersions(pack.id);
+    expect(versionList.length).toBe(2);
+    expect(versionList[0]?.note).toBe("Pack created");
+    expect(versionList[1]?.note).toBe("Edited title");
   });
 });
 
