@@ -3,7 +3,8 @@
 
 Input: a render spec JSON produced by packages/rendering (toRenderSpec),
 plus a quality value. Output: an sRGB JPEG, 2000px on the shortest side,
-matching the spec canvas size.
+matching the spec canvas size, with a real sRGB ICC profile embedded as
+a JPEG APP2 segment (see srgb_icc.py in this folder).
 
 This is the v1 proof rasterizer. It draws layout, text, and a schematic
 sheet preview inside product render boxes. The schematic is NOT a real
@@ -20,6 +21,7 @@ import sys
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
+from srgb_icc import srgb_icc_profile_bytes
 
 FONT_DIR = Path("/usr/share/fonts/truetype/dejavu")
 
@@ -197,7 +199,12 @@ def main():
                           fill=hex_to_rgb(text["fill"]), anchor="la")
 
     quality = int(spec.get("quality", 92))
-    img.save(out_path, "JPEG", quality=quality, subsampling=0)
+    # Embed a real sRGB ICC profile in every exported JPG. The profile
+    # bytes come from srgb_icc.py, a pure Python builder in this folder,
+    # so no profile file or new dependency is needed. Pillow writes the
+    # profile as a JPEG APP2 ICC segment.
+    img.save(out_path, "JPEG", quality=quality, subsampling=0,
+             icc_profile=srgb_icc_profile_bytes())
     return 0
 
 
