@@ -1,6 +1,6 @@
 // Prisma backed PackStore. Implements the PackStore interface against
 // the Prisma ListingPack, Product, ProductVerifiedFact,
-// ListingPackCopy, ListingPackCopyVersion, Export, and
+// ListingPackCopy, PackVersion, Export, and
 // AccountDeletionRequest tables (prisma/schema.prisma), replacing the
 // development in memory store for any real user data. No live database
 // is connected by this file itself: the caller supplies a PrismaClient
@@ -8,6 +8,11 @@
 // for the platform and pack version slugs. The client is typed as a
 // minimal delegate interface, so this package compiles and tests
 // without a generated client or a live database.
+//
+// Pack level versions live in the PackVersion table, through
+// PrismaPackVersionStore (pack-version-store.ts). Copy level versions
+// live in ListingPackCopyVersion and are a separate concern; this store
+// never writes a pack snapshot into the copy version table.
 //
 // The InMemoryPackStore in packs.ts remains DEVELOPMENT ONLY. It must
 // never hold real user data outside local development. Production
@@ -26,6 +31,7 @@ import type { PackStore } from "./packs.ts";
 import type { AccountDeletionRequest, ExportRecord, ListingPack, PackVersion } from "./types.ts";
 import { builderPackToDbRows, dbRowsToBuilderPack } from "./db-adapter.ts";
 import type { PlatformResolution } from "./db-adapter.ts";
+import { PrismaPackVersionStore } from "./pack-version-store.ts";
 
 export interface PrismaPackClient {
   listingPack: {
@@ -46,9 +52,10 @@ export interface PrismaPackClient {
     upsert(args: { where: Record<string, unknown>; create: Record<string, unknown>; update: Record<string, unknown> }): Promise<Record<string, unknown>>;
     findUnique(args: { where: Record<string, unknown> }): Promise<Record<string, unknown> | null>;
   };
-  listingPackCopyVersion: {
+  packVersion: {
     create(args: { data: Record<string, unknown> }): Promise<Record<string, unknown>>;
     findMany(args: { where: Record<string, unknown>; orderBy?: Record<string, unknown> }): Promise<Record<string, unknown>[]>;
+    findUnique(args: { where: Record<string, unknown> }): Promise<Record<string, unknown> | null>;
   };
   export: {
     create(args: { data: Record<string, unknown> }): Promise<Record<string, unknown>>;
@@ -74,12 +81,14 @@ function toDate(value: string | null): Date | null {
 
 export class PrismaPackStore implements PackStore {
   private client: PrismaPackClient;
+  private packVersions: PrismaPackVersionStore;
   private resolution: PlatformResolution;
   private platformSlug: string;
   private packVersionSlug: string;
 
   constructor(client: PrismaPackClient, options: PrismaPackStoreOptions) {
     this.client = client;
+    this.packVersions = new PrismaPackVersionStore(client);
     this.resolution = options.resolution;
     this.platformSlug = options.platformSlug ?? "etsy";
     this.packVersionSlug = options.packVersionSlug ?? "etsy_digital_v1";
@@ -186,26 +195,13 @@ export class PrismaPackStore implements PackStore {
   }
 
   async saveVersion(version: PackVersion): Promise<void> {
-    // Known gap, recorded honestly: PackVersion is a pack level snapshot,
-    // while ListingPackCopyVersion is a copy level table keyed by
-    // listing_pack_copy_id. This store writes the pack snapshot into that
-    // table keyed by the pack id so the round trip works, but a dedicated
-    // pack version table is needed before production use. Do not present
-    // this as a finished production version store.
-    await this.client.listingPackCopyVersion.create({ data: { listing_pack_copy_id: version.listingPackId, version_number: version.versionNumber, snapshot_json: version.snapshot, status: "draft", created_by_user_id: version.createdByUserId } });
+    // Pack level snapshot, written to the PackVersion table only. Never
+    // to ListingPackCopyVersion, which snapshots one copy row only.
+    await this.packVersions.createPackVersion(version);
   }
 
   async listVersions(listingPackId: string): Promise<PackVersion[]> {
-    const rows = await this.client.listingPackCopyVersion.findMany({ where: { listing_pack_copy_id: listingPackId }, orderBy: { version_number: "asc" } });
-    return rows.map((r) => ({
-      id: String(r["id"] ?? ""),
-      listingPackId: String(r["listing_pack_copy_id"]),
-      versionNumber: Number(r["version_number"]),
-      snapshot: r["snapshot_json"] as ListingPack,
-      createdByUserId: String(r["created_by_user_id"]),
-      createdAt: new Date(String(r["created_at"] ?? new Date().toISOString())).toISOString(),
-      note: "",
-    }));
+    return this.packVersions.listPackVersions(listingPackId);
   }
 
   async saveExport(record: ExportRecord): Promise<void> {
