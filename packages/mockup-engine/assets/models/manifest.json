@@ -1,0 +1,162 @@
+[
+  {
+    "file": "laptop-generic.glb",
+    "bytes": 308700,
+    "sha256": "225523cf72d538d82a5546bee176da6513fa55b09743a9e7c5c8aceb6df11110",
+    "meshNodeNames": [
+      "base",
+      "bezel",
+      "keyboard",
+      "lid_shell",
+      "screen",
+      "trackpad",
+      "trackpad_outline"
+    ],
+    "materialNames": [
+      "bezel",
+      "body",
+      "keys",
+      "surface"
+    ],
+    "imageCount": 0
+  },
+  {
+    "file": "phone-generic.glb",
+    "bytes": 146520,
+    "sha256": "cb489d517dc89c58492574e61f081807bda3dede9586385bf63e5c99cdd80dc7",
+    "meshNodeNames": [
+      "bezel",
+      "body",
+      "screen"
+    ],
+    "materialNames": [
+      "bezel",
+      "body",
+      "surface"
+    ],
+    "imageCount": 0
+  },
+  {
+    "file": "tablet-generic-landscape.glb",
+    "bytes": 146484,
+    "sha256": "65004d50eab6e97ff594f5f5c5db287971eaeea0ad604d7abe0a8671913ec6d8",
+    "meshNodeNames": [
+      "bezel",
+      "body",
+      "screen"
+    ],
+    "materialNames": [
+      "bezel",
+      "body",
+      "surface"
+    ],
+    "imageCount": 0
+  },
+  {
+    "file": "tablet-generic-portrait.glb",
+    "bytes": 146484,
+    "sha256": "280ff5e54a932508c8639789def5b10be735cefccf933a6c39f8edd8e9dec323",
+    "meshNodeNames": [
+      "bezel",
+      "body",
+      "screen"
+    ],
+    "materialNames": [
+      "bezel",
+      "body",
+      "surface"
+    ],
+    "imageCount": 0
+  },
+  {
+    "file": "paper-a4.glb",
+    "bytes": 151408,
+    "sha256": "aa2dcfdce9033e1f6a0932409b0ace9b7166180ba9ab4adf2153c3a43ee4d039",
+    "meshNodeNames": [
+      "page",
+      "page_paper"
+    ],
+    "materialNames": [
+      "paper",
+      "surface"
+    ],
+    "imageCount": 0
+  },
+  {
+    "file": "paper-us-letter.glb",
+    "bytes": 151408,
+    "sha256": "10671bdf115a8f34023163b938ad557d7e751cc2565d8bdfa44d0b0e4acdd0b2",
+    "meshNodeNames": [
+      "page",
+      "page_paper"
+    ],
+    "materialNames": [
+      "paper",
+      "surface"
+    ],
+    "imageCount": 0
+  },
+  {
+    "file": "paper-fan-a4.glb",
+    "bytes": 454504,
+    "sha256": "5860d6043adfc7414ded8bb9948094849041ef09c53097e5ab1c09874def6732",
+    "meshNodeNames": [
+      "page_1",
+      "page_1_paper",
+      "page_2",
+      "page_2_paper",
+      "page_3",
+      "page_3_paper"
+    ],
+    "materialNames": [
+      "paper",
+      "paper",
+      "paper",
+      "surface",
+      "surface",
+      "surface"
+    ],
+    "imageCount": 0
+  },
+  {
+    "file": "paper-fan-us-letter.glb",
+    "bytes": 454380,
+    "sha256": "9ed39c7d45e359db6e67935f6ce17063794b762d5b090702da1397059ae7b0d4",
+    "meshNodeNames": [
+      "page_1",
+      "page_1_paper",
+      "page_2",
+      "page_2_paper",
+      "page_3",
+      "page_3_paper"
+    ],
+    "materialNames": [
+      "paper",
+      "paper",
+      "paper",
+      "surface",
+      "surface",
+      "surface"
+    ],
+    "imageCount": 0
+  },
+  {
+    "file": "clipboard-a4.glb",
+    "bytes": 273020,
+    "sha256": "d556b0321fc5a5dfa5373f469d2e7688068d4a7fda07350c3fda135ba555edea",
+    "meshNodeNames": [
+      "board",
+      "clip_bar",
+      "clip_base",
+      "page",
+      "page_paper"
+    ],
+    "materialNames": [
+      "board",
+      "clip",
+      "paper",
+      "surface"
+    ],
+    "imageCount": 0
+  }
+]

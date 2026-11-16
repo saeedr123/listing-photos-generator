@@ -1,0 +1,138 @@
+{
+  "id": "modustemplates",
+  "slug": "modustemplates",
+  "name": "Modustemplates (draft)",
+  "isPlaceholder": true,
+  "placeholderNote": "Draft created 2026-11-16 because config/style-kits/modustemplates.json did not exist. Every colour, font, badge and text value below is a placeholder chosen only so the engine has a schema valid kit to read. None of it is a brand choice. Waiting for the owner brand choices: background colours, accent colour, fonts (with font files and licence records), badge style and wording, headline, feature bullets, and the final shot order.",
+  "variantOf": null,
+  "backgroundColours": [
+    "#F4F1EC",
+    "#E6E0D6"
+  ],
+  "accentColour": "#3B5B7A",
+  "textColour": "#1F2933",
+  "background": {
+    "type": "gradient",
+    "from": "#F4F1EC",
+    "to": "#E6E0D6",
+    "angleDeg": 180
+  },
+  "fonts": {
+    "headline": {
+      "family": "serif",
+      "weight": 700,
+      "fileStorageKey": null,
+      "licence": null
+    },
+    "body": {
+      "family": "sans-serif",
+      "weight": 400,
+      "fileStorageKey": null,
+      "licence": null
+    }
+  },
+  "badge": {
+    "style": "pill",
+    "wording": "Badge placeholder",
+    "backgroundColour": "#3B5B7A",
+    "textColour": "#FFFFFF"
+  },
+  "textSlots": {
+    "headline": "Headline placeholder",
+    "featureBullets": [
+      "Feature bullet placeholder 1",
+      "Feature bullet placeholder 2",
+      "Feature bullet placeholder 3"
+    ]
+  },
+  "shots": [
+    {
+      "shotId": "hero",
+      "background": null,
+      "showHeadline": false,
+      "showBullets": false,
+      "showBadge": false
+    },
+    {
+      "shotId": "angled-hero",
+      "background": null,
+      "showHeadline": true,
+      "showBullets": false,
+      "showBadge": true
+    },
+    {
+      "shotId": "laptop-plus-phone",
+      "background": null,
+      "showHeadline": true,
+      "showBullets": false,
+      "showBadge": false
+    },
+    {
+      "shotId": "phone-view",
+      "background": null,
+      "showHeadline": false,
+      "showBullets": true,
+      "showBadge": false
+    },
+    {
+      "shotId": "tablet-view",
+      "background": {
+        "type": "solid",
+        "colour": "#E6E0D6"
+      },
+      "showHeadline": false,
+      "showBullets": false,
+      "showBadge": true
+    },
+    {
+      "shotId": "printed-sheet",
+      "background": {
+        "type": "desk-texture",
+        "textureId": "desk-light-wood",
+        "backdropColour": "#E6E0D6"
+      },
+      "showHeadline": false,
+      "showBullets": false,
+      "showBadge": false
+    },
+    {
+      "shotId": "clipboard-sheet",
+      "background": {
+        "type": "desk-texture",
+        "textureId": "desk-light-wood",
+        "backdropColour": "#E6E0D6"
+      },
+      "showHeadline": false,
+      "showBullets": false,
+      "showBadge": false
+    },
+    {
+      "shotId": "fanned-pages",
+      "background": null,
+      "showHeadline": false,
+      "showBullets": false,
+      "showBadge": false
+    },
+    {
+      "shotId": "what-is-inside",
+      "background": null,
+      "showHeadline": true,
+      "showBullets": false,
+      "showBadge": false
+    },
+    {
+      "shotId": "formats-and-sizes",
+      "background": null,
+      "showHeadline": true,
+      "showBullets": false,
+      "showBadge": false
+    }
+  ],
+  "version": 1,
+  "status": "draft",
+  "previousVersion": null,
+  "changeNote": "First draft with placeholder values, so the engine can be built and tested. Not a brand decision.",
+  "createdAt": "2026-11-16",
+  "updatedAt": "2026-11-16",
+  "updatedBy": "seed"
+}

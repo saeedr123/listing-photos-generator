@@ -1,0 +1,150 @@
+{
+  "id": "laptop-generic",
+  "slug": "laptop-generic",
+  "name": "Laptop, generic",
+  "category": "laptop",
+  "tags": [
+    "laptop",
+    "screen",
+    "generic",
+    "unbranded"
+  ],
+  "renderer": "glb-3d",
+  "modelFile": {
+    "storageKey": "builtin/models/laptop-generic.glb",
+    "bytes": 308700,
+    "sha256": "225523cf72d538d82a5546bee176da6513fa55b09743a9e7c5c8aceb6df11110"
+  },
+  "legacyFrame": null,
+  "surfaces": [
+    {
+      "id": "screen",
+      "meshName": "screen",
+      "kind": "screen",
+      "aspect": 1.6,
+      "pageSlot": 0,
+      "letterboxColour": "#EEF0F2"
+    }
+  ],
+  "allowedOrientations": [
+    "landscape"
+  ],
+  "cameraPresets": [
+    {
+      "id": "front",
+      "label": "Front",
+      "position": [
+        0,
+        0.2,
+        0.72
+      ],
+      "target": [
+        0,
+        0.105,
+        -0.03
+      ],
+      "fovDeg": 28
+    },
+    {
+      "id": "angle-left",
+      "label": "Angle from the left",
+      "position": [
+        -0.42,
+        0.27,
+        0.56
+      ],
+      "target": [
+        0,
+        0.1,
+        -0.03
+      ],
+      "fovDeg": 28
+    },
+    {
+      "id": "angle-right",
+      "label": "Angle from the right",
+      "position": [
+        0.42,
+        0.27,
+        0.56
+      ],
+      "target": [
+        0,
+        0.1,
+        -0.03
+      ],
+      "fovDeg": 28
+    },
+    {
+      "id": "high",
+      "label": "High three quarter",
+      "position": [
+        -0.3,
+        0.5,
+        0.5
+      ],
+      "target": [
+        0,
+        0.08,
+        -0.02
+      ],
+      "fovDeg": 28
+    }
+  ],
+  "defaultCameraPresetId": "front",
+  "colourOptions": [
+    {
+      "id": "silver",
+      "label": "Silver",
+      "materialName": "body",
+      "colour": "#C9CCD1"
+    },
+    {
+      "id": "graphite",
+      "label": "Graphite",
+      "materialName": "body",
+      "colour": "#4A4D52"
+    },
+    {
+      "id": "soft-gold",
+      "label": "Soft gold",
+      "materialName": "body",
+      "colour": "#D9C3A5"
+    },
+    {
+      "id": "dark-blue",
+      "label": "Dark blue",
+      "materialName": "body",
+      "colour": "#2D3A4F"
+    }
+  ],
+  "defaultColourOptionId": "silver",
+  "previewThumbnail": null,
+  "licence": {
+    "source": "Built in house",
+    "licenceType": "own-built, owned outright",
+    "licenceDate": "2026-11-16",
+    "licenceStorageLocation": "packages/mockup-engine/assets/models/laptop-generic.glb, built by scripts/build-studio-models.mjs",
+    "creator": "Listing Photos Generator, in house",
+    "notes": "Generated from plain geometry written in scripts/build-studio-models.mjs. Generic and unbranded: no logo, no trademark. No Adobe Stock, ls.graphics or other vendor model, preview, PSD or image was copied or traced."
+  },
+  "unbrandedConfirmed": true,
+  "previewedWithRealRender": false,
+  "qualityLabel": "basic",
+  "premiumCriteria": {
+    "realisticPerspective": true,
+    "softRealisticShadows": false,
+    "depth": false,
+    "lifestyleOrDeskScene": false,
+    "realisticMaterialsAndEdges": false,
+    "screenCrispAtExportSize": false
+  },
+  "humanReview": null,
+  "version": 1,
+  "status": "preview",
+  "previousVersion": null,
+  "changeNote": "First version, built in house. Status is preview, not published: it has been previewed with test charts only, not with a real product render, and no human visual review is recorded. Labelled basic. Premium criteria that need a human eye are left false until reviewed.",
+  "createdAt": "2026-11-16",
+  "updatedAt": "2026-11-16",
+  "updatedBy": "seed"
+}
