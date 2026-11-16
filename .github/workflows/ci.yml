@@ -28,7 +28,7 @@ jobs:
         run: npm run prisma:validate
       - name: Check for em dashes and en dashes
         run: |
-          if grep -rP '\x{2014}|\x{2013}' --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.next --exclude=package-lock.json .; then
+          if LC_ALL=C.UTF-8 grep -rIP '\x{2014}|\x{2013}' --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.next --exclude=package-lock.json .; then
             echo "Em dash or en dash found in the repository. Use a hyphen or comma instead."
             exit 1
           fi
