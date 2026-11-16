@@ -26,7 +26,8 @@ export async function GET(): Promise<Response> {
     for (const model of models) {
       const history = await studio.registry.models.history(model.id);
       const issues: StudioIssue[] = await studio.registry.modelIssues(model);
-      rows.push({ model, versions: history.map((h) => ({ version: h.version, status: h.status, changeNote: h.changeNote, updatedAt: h.updatedAt, updatedBy: h.updatedBy })), issues });
+      const file = model.modelFile ? await studio.readAsset(model.modelFile.storageKey) : null;
+      rows.push({ model, glb: file ? inspectGlb(file.data) : null, versions: history.map((h) => ({ version: h.version, status: h.status, changeNote: h.changeNote, updatedAt: h.updatedAt, updatedBy: h.updatedBy })), issues });
     }
     return Response.json({ ok: true, rows, storageProvider: studio.storage.providerName });
   } catch (error) {
