@@ -24,10 +24,10 @@ Apps import from `packages/mockup-engine/src/index.ts` only:
 
 | Mockup | Frame | Screen areas | Orientations | Quality label |
 |---|---|---|---|---|
-| Laptop Alone, Straight | `frames/laptop-alone.svg` | 1, landscape | Landscape | Premium (declared, see below) |
-| Phone Alone, Straight | `frames/phone-alone.svg` | 1, portrait | Portrait | Premium (declared, see below) |
-| Tablet Alone, Straight | `frames/tablet-alone.svg` | 1, landscape | Landscape, portrait | Premium (declared, see below) |
-| Laptop Plus Phone Hero | `frames/laptop-plus-phone.svg` | 2, laptop and phone | Landscape | Premium (declared, see below) |
+| Laptop Alone, Straight | `frames/laptop-alone.svg` | 1, landscape | Landscape | Basic, not premium (relabelled 2026-11-16, version 2) |
+| Phone Alone, Straight | `frames/phone-alone.svg` | 1, portrait | Portrait | Basic, not premium (relabelled 2026-11-16, version 2) |
+| Tablet Alone, Straight | `frames/tablet-alone.svg` | 1, landscape | Landscape, portrait | Basic, not premium (relabelled 2026-11-16, version 2) |
+| Laptop Plus Phone Hero | `frames/laptop-plus-phone.svg` | 2, laptop and phone | Landscape | Basic, not premium (relabelled 2026-11-16, version 2) |
 | Flat Feature Frame | `frames/flat-feature-frame.svg` | 1, landscape | Landscape, portrait | Basic, not premium |
 
 Straight devices are the default, no warp. All five frames are built in
@@ -58,10 +58,20 @@ A flat basic rectangle with a plain background FAILS the premium label,
 even if the screen inside it is crisp. The Flat Feature Frame is
 labelled basic on purpose and the test proves it fails premium.
 
-The four other frames pass the declared criteria check. That check is
-not a human visual review. A human visual review at export size is still
-required before the live library calls any frame premium. This is
-recorded in each mockup definition under `crispTestNote`.
+The four device frames were declared premium on 2026-11-07 without a
+human visual review. That broke PROMPT.md section 9.2. On 2026-11-16
+they were relabelled basic at version 2, with the change recorded in
+each definition under `changeNote` and `previousVersion`. Their premium
+criteria now read false for perspective, materials and edges, shadows,
+and depth, because a flat straight on SVG illustration does not meet
+them and no review has verified them.
+
+A premium label now needs two things: every criterion true, and an
+approved human visual review sign-off (`humanReview` on the definition:
+who reviewed, when, who approved, when, decision). `validateMockup`
+fails a premium label with no approved sign-off at every status, not
+only when published. `checkPremium` reports the missing sign-off as a
+failed criterion. No frame in the library is labelled premium today.
 
 ## Licence records
 

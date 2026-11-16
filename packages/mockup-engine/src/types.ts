@@ -35,6 +35,19 @@ export interface PremiumCriteria {
   screenCrispAtExportSize: boolean;
 }
 
+// Human visual review sign-off, per PROMPT.md sections 9.2 and 9.4. A
+// frame may only carry the premium label when a person has looked at it
+// at export size and the owner has approved it. The record is data, so
+// the reviewer and approver names are never hard coded in the engine.
+export interface HumanReviewSignOff {
+  reviewedBy: string;
+  reviewedAt: string;
+  approvedBy: string;
+  approvedAt: string;
+  decision: "approved" | "rejected";
+  note: string;
+}
+
 export interface MockupDefinition {
   id: string;
   slug: string;
@@ -53,6 +66,8 @@ export interface MockupDefinition {
   warpNote: string | null;
   qualityLabel: QualityLabel;
   premiumCriteria: PremiumCriteria;
+  // Absent or null means no human visual review sign-off is recorded.
+  humanReview?: HumanReviewSignOff | null;
   licence: LicenceRecord;
   crispTestStatus: "not_tested" | "pass" | "fail";
   crispTestNote: string;
