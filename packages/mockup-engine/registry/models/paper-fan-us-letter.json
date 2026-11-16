@@ -13,8 +13,8 @@
   "renderer": "glb-3d",
   "modelFile": {
     "storageKey": "builtin/models/paper-fan-us-letter.glb",
-    "bytes": 454380,
-    "sha256": "9ed39c7d45e359db6e67935f6ce17063794b762d5b090702da1397059ae7b0d4"
+    "bytes": 454408,
+    "sha256": "f78fe31ff18f8998dca6e2c63731b4e723307ac9601fef4c49197a9b0a3707fc"
   },
   "legacyFrame": null,
   "surfaces": [

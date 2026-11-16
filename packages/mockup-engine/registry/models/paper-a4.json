@@ -12,8 +12,8 @@
   "renderer": "glb-3d",
   "modelFile": {
     "storageKey": "builtin/models/paper-a4.glb",
-    "bytes": 151408,
-    "sha256": "aa2dcfdce9033e1f6a0932409b0ace9b7166180ba9ab4adf2153c3a43ee4d039"
+    "bytes": 151416,
+    "sha256": "954dfc35f6ab99e1f13f887700a8851751ee54b3156b45e454c2c79ad25c6006"
   },
   "legacyFrame": null,
   "surfaces": [

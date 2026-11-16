@@ -57,10 +57,10 @@
   "lightingPresetId": "studio-soft",
   "contactShadow": {
     "enabled": true,
-    "opacity": 0.42,
-    "blur": 0.035,
+    "opacity": 0.75,
+    "blur": 0.014,
     "planeSizeMetres": 1.4,
-    "heightMetres": 0.35
+    "heightMetres": 0.3
   },
   "textLayout": {
     "headline": {

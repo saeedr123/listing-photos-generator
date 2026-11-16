@@ -13,8 +13,8 @@
   "renderer": "glb-3d",
   "modelFile": {
     "storageKey": "builtin/models/paper-fan-a4.glb",
-    "bytes": 454504,
-    "sha256": "5860d6043adfc7414ded8bb9948094849041ef09c53097e5ab1c09874def6732"
+    "bytes": 454528,
+    "sha256": "437283b848bd8aee275d50e9221f78852bc2589fca49ac9ae162f97d701c27ea"
   },
   "legacyFrame": null,
   "surfaces": [

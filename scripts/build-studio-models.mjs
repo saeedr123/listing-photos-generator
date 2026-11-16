@@ -238,9 +238,12 @@ function paperGeometry(width, height, curl) {
       const u = ix / segmentsX; // 0 at the left edge
       const x = (u - 0.5) * width;
       const z = (v - 0.5) * height;
-      const corner = Math.max(0, u - 0.45) * Math.max(0, 0.75 - v);
-      const lift = curl * 0.085 * corner * corner * 16;
-      const bow = curl * 0.0018 * Math.sin(Math.PI * v) * (0.6 + 0.4 * u);
+      // Corner lift: 0 over most of the sheet, rising smoothly to about
+      // 7 mm at the top right corner. Small enough that the sheet keeps
+      // its paper aspect, so the design on it is not stretched.
+      const corner = (Math.max(0, u - 0.45) / 0.55) * (Math.max(0, 0.75 - v) / 0.75);
+      const lift = curl * 0.007 * corner * corner;
+      const bow = curl * 0.0015 * Math.sin(Math.PI * v) * (0.6 + 0.4 * u);
       positions.push(x, lift + bow, z);
       uvs.push(u, v);
     }

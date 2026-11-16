@@ -84,8 +84,10 @@ export function computeSurfaceTextureLayout(input: SurfaceFitInput): SurfaceText
   const scale = Math.min(canvasWidthPx / designWidthPx, canvasHeightPx / designHeightPx, 1);
   const drawWidthPx = designWidthPx * scale;
   const drawHeightPx = designHeightPx * scale;
-  const drawX = (canvasWidthPx - drawWidthPx) / 2;
-  const drawY = (canvasHeightPx - drawHeightPx) / 2;
+  // Whole pixel offsets, so a design drawn at its native size lands on
+  // the pixel grid and is copied, not resampled.
+  const drawX = Math.floor((canvasWidthPx - drawWidthPx) / 2);
+  const drawY = Math.floor((canvasHeightPx - drawHeightPx) / 2);
 
   const designOrientation = orientationOf(designWidthPx, designHeightPx);
   const surfaceOrientation = surfaceOrientationOf(surfaceAspect);

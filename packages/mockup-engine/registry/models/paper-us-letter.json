@@ -12,8 +12,8 @@
   "renderer": "glb-3d",
   "modelFile": {
     "storageKey": "builtin/models/paper-us-letter.glb",
-    "bytes": 151408,
-    "sha256": "10671bdf115a8f34023163b938ad557d7e751cc2565d8bdfa44d0b0e4acdd0b2"
+    "bytes": 151416,
+    "sha256": "158d8db0cab128a970fb5fa9969464b777b04fbcf76046b61633e8d3d8683c6f"
   },
   "legacyFrame": null,
   "surfaces": [

@@ -12,8 +12,8 @@
   "renderer": "glb-3d",
   "modelFile": {
     "storageKey": "builtin/models/clipboard-a4.glb",
-    "bytes": 273020,
-    "sha256": "d556b0321fc5a5dfa5373f469d2e7688068d4a7fda07350c3fda135ba555edea"
+    "bytes": 273028,
+    "sha256": "05106121d7a99cfa6c2ab886083173e73fcd52656d4d7ab3689ca8b4bb1d55de"
   },
   "legacyFrame": null,
   "surfaces": [

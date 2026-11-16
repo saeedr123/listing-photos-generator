@@ -28,23 +28,23 @@
   "camera": {
     "position": [
       0,
-      0.15,
-      0.72
+      0.16,
+      0.78
     ],
     "target": [
       0,
-      0.122,
+      0.128,
       0
     ],
-    "fovDeg": 26
+    "fovDeg": 24
   },
   "lightingPresetId": "studio-soft",
   "contactShadow": {
     "enabled": true,
-    "opacity": 0.42,
-    "blur": 0.035,
+    "opacity": 0.75,
+    "blur": 0.014,
     "planeSizeMetres": 1.4,
-    "heightMetres": 0.35
+    "heightMetres": 0.3
   },
   "textLayout": {
     "headline": null,

@@ -70,8 +70,8 @@
   },
   {
     "file": "paper-a4.glb",
-    "bytes": 151408,
-    "sha256": "aa2dcfdce9033e1f6a0932409b0ace9b7166180ba9ab4adf2153c3a43ee4d039",
+    "bytes": 151416,
+    "sha256": "954dfc35f6ab99e1f13f887700a8851751ee54b3156b45e454c2c79ad25c6006",
     "meshNodeNames": [
       "page",
       "page_paper"
@@ -84,8 +84,8 @@
   },
   {
     "file": "paper-us-letter.glb",
-    "bytes": 151408,
-    "sha256": "10671bdf115a8f34023163b938ad557d7e751cc2565d8bdfa44d0b0e4acdd0b2",
+    "bytes": 151416,
+    "sha256": "158d8db0cab128a970fb5fa9969464b777b04fbcf76046b61633e8d3d8683c6f",
     "meshNodeNames": [
       "page",
       "page_paper"
@@ -98,8 +98,8 @@
   },
   {
     "file": "paper-fan-a4.glb",
-    "bytes": 454504,
-    "sha256": "5860d6043adfc7414ded8bb9948094849041ef09c53097e5ab1c09874def6732",
+    "bytes": 454528,
+    "sha256": "437283b848bd8aee275d50e9221f78852bc2589fca49ac9ae162f97d701c27ea",
     "meshNodeNames": [
       "page_1",
       "page_1_paper",
@@ -120,8 +120,8 @@
   },
   {
     "file": "paper-fan-us-letter.glb",
-    "bytes": 454380,
-    "sha256": "9ed39c7d45e359db6e67935f6ce17063794b762d5b090702da1397059ae7b0d4",
+    "bytes": 454408,
+    "sha256": "f78fe31ff18f8998dca6e2c63731b4e723307ac9601fef4c49197a9b0a3707fc",
     "meshNodeNames": [
       "page_1",
       "page_1_paper",
@@ -142,8 +142,8 @@
   },
   {
     "file": "clipboard-a4.glb",
-    "bytes": 273020,
-    "sha256": "d556b0321fc5a5dfa5373f469d2e7688068d4a7fda07350c3fda135ba555edea",
+    "bytes": 273028,
+    "sha256": "05106121d7a99cfa6c2ab886083173e73fcd52656d4d7ab3689ca8b4bb1d55de",
     "meshNodeNames": [
       "board",
       "clip_bar",
