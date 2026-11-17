@@ -112,8 +112,9 @@ export function ModelRegistryAdmin({ lighting }: { lighting: LightingPreset }) {
           setMessage({ tone: "error", text: result.error ?? "The change could not be saved." });
           return null;
         }
-        setMessage({ tone: "ok", text: done });
+        // Refresh the list first, so the message never appears next to a stale row.
         await reload();
+        setMessage({ tone: "ok", text: done });
         return result.model as ModelRegistryEntry;
       } finally {
         setBusy(false);

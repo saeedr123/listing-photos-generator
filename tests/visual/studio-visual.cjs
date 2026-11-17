@@ -206,6 +206,7 @@ async function adminFlow(browser) {
   await page.fill('[data-testid="change-note"]', "Enabled by the browser test.");
   await page.click('[data-testid="enable-model"]');
   await page.waitForFunction(() => /Enabled\. The model can now be used/.test(document.querySelector('[data-testid="admin-message"]')?.textContent || ""), null, { timeout: 60000 });
+  await page.waitForFunction((modelId) => document.querySelector(`[data-model-id="${modelId}"] [data-testid="row-status"]`)?.textContent === "published", id, { timeout: 30000 }).catch(() => {});
   const status = await page.locator(`[data-model-id="${id}"] [data-testid="row-status"]`).innerText();
   record("the model is enabled through admin, with no code change", status === "published", `status ${status}`);
 
