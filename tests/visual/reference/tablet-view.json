@@ -1,0 +1,58 @@
+{
+  "shotId": "tablet-view",
+  "fullWidthPx": 3000,
+  "fullHeightPx": 2000,
+  "referenceWidthPx": 750,
+  "referenceHeightPx": 500,
+  "downsampleFactor": 4,
+  "supersampleUsed": 2,
+  "framing": {
+    "widthPx": 3000,
+    "heightPx": 2000,
+    "camera": {
+      "position": [
+        0,
+        0.16,
+        0.78
+      ],
+      "target": [
+        0,
+        0.128,
+        0
+      ],
+      "fovDeg": 24
+    },
+    "surfaces": [
+      {
+        "modelIndex": 0,
+        "surfaceId": "screen",
+        "cornersPx": [
+          [
+            960.568483588825,
+            352.0717130608997
+          ],
+          [
+            1934.163432607504,
+            371.59020433705933
+          ],
+          [
+            1998.701478718245,
+            1679.6421734506089
+          ],
+          [
+            990.4781263060526,
+            1720.2744188985075
+          ]
+        ]
+      }
+    ]
+  },
+  "renderer": {
+    "runner": "browser-webgl",
+    "threeRevision": "170",
+    "glRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+    "maxTextureSizePx": 8192
+  },
+  "warnings": []
+}

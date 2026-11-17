@@ -1,5 +1,47 @@
 # Listing Photos Generator: Project Status
 
+## Status, 2026-11-17: 3D mockup studio, provisional, pull request ready for review, not merged
+
+3D mockup studio built on branch claude/listing-photos-generator-mockup-cj66s8, in pull request saeedr123/listing-photos-generator#1, marked ready for review on 2026-11-17, not merged. Do not merge until Saeed answers the decisions listed below. No spending, no live site, no contact with real people, no licence bought. The 14 November direction change it follows is PROVISIONAL until Saeed approves it (PROMPT.md section 7.6, docs/architecture.md section 6.7).
+
+Verification by the engineering session, 2026-11-17, at the head of the branch: 339 tests pass, 0 fail (root vitest 43, tests/run-tests.sh 177, node suites ai 39 plus billing 34 plus billing-provider 9, auth 13, builder 17, admin 7). The real-pack suite is skipped here because its source renders are outside the repository. Typecheck passes, lint passes, Prisma schema valid, Next build passes (one compile warning from the existing server-auth.ts, not from this work). No em dashes or en dashes in any text file. Browser checks on the production build in headless Chromium: 61 pass, 0 fail (tests/visual/studio-visual.cjs --e2e). prisma generate was not run and no database test was run or is claimed. GitHub Actions: the CI workflow passed on the pull request at commit 41c2d0f, 2026-11-17 (lint, typecheck, vitest, tests/run-tests.sh, Prisma validate, dash scan). CI on main had been failing before this branch, at tests/merge.test.ts line 181, because the workflow never installed Pillow, which the export tests need. The workflow now installs it. The first CI run on this branch failed because package-lock.json was missing the new storage workspace. That was fixed.
+
+Baseline note: PROJECT_STATUS.md said 223 tests at 3744c03. The count measured at 3744c03 on 2026-11-16 was 213 pass, 0 fail. 5 of the missing 10 are the skipped real-pack tests. The other 5 could not be located.
+
+Built and tested:
+- Label fix: laptop-alone, phone-alone, tablet-alone and laptop-plus-phone relabelled basic at version 2, with honest premium criteria. A premium label now needs every criterion plus a recorded human review sign-off, at every status. No frame or model is labelled premium.
+- Object storage interface (packages/storage) with a local file adapter for development only, an in memory adapter for tests, and versioned JSON documents. No production provider chosen.
+- Model registry, admin managed, versioned: upload a GLB, name the screen mesh, set presets, preview, enable, with duplicate, edit, hide and roll back. A new model was added through /admin/models in a browser with no code change and appeared in the studio catalog.
+- 3D scene engine in apps/web: three.js 0.170.0 and React Three Fiber 8.18.0. GLB models, design as a texture on the named mesh, PBR materials, environment lighting, soft contact shadows, free orbit camera, camera presets, device colours, background from the style kit.
+- 9 in house GLB models (laptop, phone, 2 tablets, A4 sheet, US Letter sheet, 2 fanned stacks, clipboard), 1 procedural desk texture, 1 procedural lighting preset. All with licence records. All basic quality.
+- 10 shots (working drafts, preview status) and a draft style kit with placeholder values.
+- Batch export: one design plus one kit gives the ordered set. Every image goes through the export gate (size from the Etsy pack, sRGB, embedded sRGB profile proved from the bytes) and into a zip. Measured: 10 JPGs, each 3000 by 2000.
+- Colour extraction: 3 to 5 dominant colours, offered as a style kit variant. The design colours are never changed.
+- Migration: the 5 SVG frames are in the registry as basic 2D fallbacks.
+- Visual regression: one reference render per shot in tests/visual/reference, with a compare script.
+
+Not built, not verified, or waiting, in plain words:
+- No human visual review of anything. The reference renders are not an approved look.
+- No real product render exists in the repository. Everything was checked with test charts. So every built in model is in preview status, not published, and every exported set is a proof, marked as one.
+- Checked only in headless Chromium with a software GPU. Not on a real GPU, not in Firefox or Safari, not on a phone, not by a person.
+- The studio at /studio is not wired to listing packs, the reconciliation check, entitlements, export history or rate limits. /studio and the export gate route are open to any visitor. Gate them before any deployment.
+- Rendering runs in the browser. docs/architecture.md says background jobs. The renderer is behind a job runner interface. Only the browser runner exists. The export gate trusts placement numbers reported by the browser.
+- HDRI files and font files: the code paths exist and have never run, because no such asset exists.
+- No premium sign-off form in admin. No preview thumbnails. No PDF input. No seller text editing. No desk prop models.
+- Missing inputs that were not invented: docs/shot-list.md, fixtures/designs with 3 CV renders, reference screenshots for the target look, licensed GLBs and HDRIs. Placeholders made and marked: config/style-kits/modustemplates.json, the 10 shots, the test charts.
+
+Decisions waiting on Saeed:
+1. Approve, change or reject the 14 November 3D studio direction as written in PROMPT.md section 7.6.
+2. Where rendering runs: in the browser as built, or as a background job.
+3. Object storage provider for production.
+4. Brand values for the modustemplates style kit: colours, fonts (with font files and licences), badge, wording, shot order.
+5. The shot list.
+6. Human visual review of the models and renders, before any premium label.
+7. Design surfaces are unlit so colours stay exact. Lit paper would look more real and change colours. Keep the rule, or allow it with seller approval.
+8. Real design renders to test with.
+
+Full detail: docs/mockup-engine.md, section "3D mockup studio".
+
 ## Status, 2026-11-11: server login and RefundRequest, coordinator verified
 
 Server login for real admin access and the RefundRequest table are complete in local files only, no GitHub push, no spending, no live site, no contact with real people. Coordinator verification, 2026-11-11: 223 tests pass, 0 fail (root vitest 43, engine suite 56, node suites 87, auth 13, builder 17, admin 7), full typecheck passes, lint passes, Prisma schema valid (45 models), Next build passes, production click through with scripts/verify-server-login.sh: all 7 checks pass (logged out /admin 307, forged cookie 307, wrong password 200 with the generic message and no cookie, correct login 303 to /admin with an HttpOnly SameSite=Lax lpg_session cookie, logged in /admin 200 with Admin panel and Sign out, logout 303 to /auth/login and the old token then 307), mobile user agent on home 200, desktop home 200, login page 200. No em dashes or en dashes in any file written (coordinator scan).

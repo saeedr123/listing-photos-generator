@@ -1,0 +1,122 @@
+{
+  "id": "tablet-generic-landscape",
+  "slug": "tablet-generic-landscape",
+  "name": "Tablet, generic, landscape",
+  "category": "tablet",
+  "tags": [
+    "tablet",
+    "screen",
+    "generic",
+    "unbranded",
+    "landscape"
+  ],
+  "renderer": "glb-3d",
+  "modelFile": {
+    "storageKey": "builtin/models/tablet-generic-landscape.glb",
+    "bytes": 146484,
+    "sha256": "65004d50eab6e97ff594f5f5c5db287971eaeea0ad604d7abe0a8671913ec6d8"
+  },
+  "legacyFrame": null,
+  "surfaces": [
+    {
+      "id": "screen",
+      "meshName": "screen",
+      "kind": "screen",
+      "aspect": 1.3333333333333333,
+      "pageSlot": 0,
+      "letterboxColour": "#EEF0F2"
+    }
+  ],
+  "allowedOrientations": [
+    "landscape",
+    "square"
+  ],
+  "cameraPresets": [
+    {
+      "id": "front",
+      "label": "Front",
+      "position": [
+        0,
+        0.11,
+        0.62
+      ],
+      "target": [
+        0,
+        0.095,
+        0
+      ],
+      "fovDeg": 26
+    },
+    {
+      "id": "angle-left",
+      "label": "Angle from the left",
+      "position": [
+        -0.28,
+        0.16,
+        0.55
+      ],
+      "target": [
+        0,
+        0.095,
+        0
+      ],
+      "fovDeg": 26
+    }
+  ],
+  "defaultCameraPresetId": "front",
+  "colourOptions": [
+    {
+      "id": "silver",
+      "label": "Silver",
+      "materialName": "body",
+      "colour": "#C9CCD1"
+    },
+    {
+      "id": "graphite",
+      "label": "Graphite",
+      "materialName": "body",
+      "colour": "#4A4D52"
+    },
+    {
+      "id": "soft-gold",
+      "label": "Soft gold",
+      "materialName": "body",
+      "colour": "#D9C3A5"
+    },
+    {
+      "id": "dark-blue",
+      "label": "Dark blue",
+      "materialName": "body",
+      "colour": "#2D3A4F"
+    }
+  ],
+  "defaultColourOptionId": "silver",
+  "previewThumbnail": null,
+  "licence": {
+    "source": "Built in house",
+    "licenceType": "own-built, owned outright",
+    "licenceDate": "2026-11-16",
+    "licenceStorageLocation": "packages/mockup-engine/assets/models/tablet-generic-landscape.glb, built by scripts/build-studio-models.mjs",
+    "creator": "Listing Photos Generator, in house",
+    "notes": "Generated from plain geometry written in scripts/build-studio-models.mjs. Generic and unbranded: no logo, no trademark. No Adobe Stock, ls.graphics or other vendor model, preview, PSD or image was copied or traced."
+  },
+  "unbrandedConfirmed": true,
+  "previewedWithRealRender": false,
+  "qualityLabel": "basic",
+  "premiumCriteria": {
+    "realisticPerspective": true,
+    "softRealisticShadows": false,
+    "depth": false,
+    "lifestyleOrDeskScene": false,
+    "realisticMaterialsAndEdges": false,
+    "screenCrispAtExportSize": false
+  },
+  "humanReview": null,
+  "version": 1,
+  "status": "preview",
+  "previousVersion": null,
+  "changeNote": "First version, built in house. Status is preview, not published: it has been previewed with test charts only, not with a real product render, and no human visual review is recorded. Labelled basic. Premium criteria that need a human eye are left false until reviewed.",
+  "createdAt": "2026-11-16",
+  "updatedAt": "2026-11-16",
+  "updatedBy": "seed"
+}

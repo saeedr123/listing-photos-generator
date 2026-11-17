@@ -10,6 +10,8 @@ const links = [
   ["Users", "/admin/users"],
   ["Templates", "/admin/templates"],
   ["Mockups", "/admin/mockups"],
+  ["3D models", "/admin/models"],
+  ["Style kits", "/admin/style-kits"],
   ["AI prompts", "/admin/prompts"],
   ["Niche packs", "/admin/niche"],
   ["Platform packs", "/admin/platform"],

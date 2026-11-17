@@ -40,6 +40,21 @@
       ],
       "@listing-photos-generator/ai/browser": [
         "../../packages/ai/src/browser.ts"
+      ],
+      "@listing-photos-generator/mockup-engine/studio": [
+        "../../packages/mockup-engine/src/studio/browser.ts"
+      ],
+      "@listing-photos-generator/mockup-engine/studio-server": [
+        "../../packages/mockup-engine/src/studio/index.ts"
+      ],
+      "@listing-photos-generator/storage": [
+        "../../packages/storage/src/index.ts"
+      ],
+      "@listing-photos-generator/export": [
+        "../../packages/export/src/index.ts"
+      ],
+      "@listing-photos-generator/export/zip": [
+        "../../packages/export/src/zip.ts"
       ]
     },
     "plugins": [

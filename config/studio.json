@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "note": "Mockup studio settings that are not platform rules. Platform values such as the export pixel size, format and image limit come from the platform pack, never from this file.",
+  "catalog": {
+    "includePreviewItems": true,
+    "includePreviewItemsNote": "While true, the studio may use models and shots that are in preview status, and every set made with one is a proof only, not a publishable set. Set to false once models and shots have been reviewed and published."
+  },
+  "batch": {
+    "targetMinImages": 7,
+    "targetMaxImages": 10
+  },
+  "render": {
+    "supersample": 2
+  },
+  "colourExtraction": {
+    "minColours": 3,
+    "maxColours": 5,
+    "mergeDistance": 40,
+    "maxSamples": 40000,
+    "variantTintAmount": 0.85
+  },
+  "determinism": {
+    "referenceBrowser": "Chromium 153 headless (Playwright build), ANGLE on SwiftShader, Linux x86_64",
+    "referenceDownsampleFactor": 4,
+    "cornerTolerancePx": 0.5,
+    "pixelDiff": {
+      "channelTolerance": 12,
+      "maxDifferentPixelRatio": 0.002,
+      "maxMeanAbsoluteDifference": 0.5
+    }
+  },
+  "upload": {
+    "maxModelBytes": 26214400,
+    "maxDesignBytes": 31457280,
+    "modelContentTypes": [
+      "model/gltf-binary",
+      "application/octet-stream"
+    ],
+    "designContentTypes": [
+      "image/png",
+      "image/jpeg",
+      "image/webp"
+    ]
+  }
+}

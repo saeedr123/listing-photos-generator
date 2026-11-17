@@ -1,0 +1,95 @@
+{
+  "id": "paper-us-letter",
+  "slug": "paper-us-letter",
+  "name": "US Letter sheet",
+  "category": "print",
+  "tags": [
+    "paper",
+    "us-letter",
+    "sheet",
+    "print"
+  ],
+  "renderer": "glb-3d",
+  "modelFile": {
+    "storageKey": "builtin/models/paper-us-letter.glb",
+    "bytes": 151416,
+    "sha256": "158d8db0cab128a970fb5fa9969464b777b04fbcf76046b61633e8d3d8683c6f"
+  },
+  "legacyFrame": null,
+  "surfaces": [
+    {
+      "id": "page",
+      "meshName": "page",
+      "kind": "paper",
+      "aspect": 0.7727272727272728,
+      "pageSlot": 0,
+      "letterboxColour": "#FFFFFF"
+    }
+  ],
+  "allowedOrientations": [
+    "portrait"
+  ],
+  "cameraPresets": [
+    {
+      "id": "above",
+      "label": "From above",
+      "position": [
+        0,
+        0.58,
+        0.15
+      ],
+      "target": [
+        0,
+        0,
+        0.005
+      ],
+      "fovDeg": 30
+    },
+    {
+      "id": "low-angle",
+      "label": "Low angle",
+      "position": [
+        -0.18,
+        0.34,
+        0.42
+      ],
+      "target": [
+        0,
+        0,
+        0
+      ],
+      "fovDeg": 30
+    }
+  ],
+  "defaultCameraPresetId": "above",
+  "colourOptions": [],
+  "defaultColourOptionId": null,
+  "previewThumbnail": null,
+  "licence": {
+    "source": "Built in house",
+    "licenceType": "own-built, owned outright",
+    "licenceDate": "2026-11-16",
+    "licenceStorageLocation": "packages/mockup-engine/assets/models/paper-us-letter.glb, built by scripts/build-studio-models.mjs",
+    "creator": "Listing Photos Generator, in house",
+    "notes": "Generated from plain geometry written in scripts/build-studio-models.mjs. Generic and unbranded: no logo, no trademark. No Adobe Stock, ls.graphics or other vendor model, preview, PSD or image was copied or traced."
+  },
+  "unbrandedConfirmed": true,
+  "previewedWithRealRender": false,
+  "qualityLabel": "basic",
+  "premiumCriteria": {
+    "realisticPerspective": true,
+    "softRealisticShadows": false,
+    "depth": false,
+    "lifestyleOrDeskScene": false,
+    "realisticMaterialsAndEdges": false,
+    "screenCrispAtExportSize": false
+  },
+  "humanReview": null,
+  "version": 1,
+  "status": "preview",
+  "previousVersion": null,
+  "changeNote": "First version, built in house. Status is preview, not published: it has been previewed with test charts only, not with a real product render, and no human visual review is recorded. Labelled basic. Premium criteria that need a human eye are left false until reviewed.",
+  "createdAt": "2026-11-16",
+  "updatedAt": "2026-11-16",
+  "updatedBy": "seed"
+}

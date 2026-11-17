@@ -1,0 +1,18 @@
+{
+  "id": "desk-light-wood",
+  "name": "Light wood desk",
+  "storageKey": "builtin/textures/desk-light-wood.jpg",
+  "tileSizeMetres": 0.9,
+  "licence": {
+    "source": "Built in house",
+    "licenceType": "own-built, owned outright",
+    "licenceDate": "2026-11-16",
+    "licenceStorageLocation": "packages/mockup-engine/assets/textures/desk-light-wood.jpg, built by scripts/build-studio-textures.py",
+    "creator": "Listing Photos Generator, in house",
+    "notes": "Generated from seeded noise in scripts/build-studio-textures.py. Not a photo. Not taken, traced or converted from any stock library."
+  },
+  "version": 1,
+  "status": "published",
+  "previousVersion": null,
+  "changeNote": "First version, built in house. A simple procedural texture, basic quality."
+}

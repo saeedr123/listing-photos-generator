@@ -12,3 +12,9 @@ coverage/
 __pycache__/
 *.pyc
 *.tsbuildinfo
+
+# Local object storage for development (packages/storage local file adapter)
+.local-storage/
+
+# Visual regression candidates and export checks (tests/visual/studio-visual.cjs)
+tests/visual/output/
