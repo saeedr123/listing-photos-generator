@@ -226,6 +226,25 @@ async function adminFlow(browser) {
   await page.goto(`${BASE_URL}/admin/style-kits`, { waitUntil: "networkidle", timeout: 180000 });
   await page.waitForSelector('[data-testid="edit-kit"]', { timeout: 120000 });
   record("the style kit screen shows the draft kit as placeholder values", /placeholder values/.test(await page.locator("main").innerText()));
+
+  // Edit the kit: a bad colour is refused, a good edit is a new version.
+  await page.click('[data-testid="edit-kit"]');
+  const kitText = await page.locator('[data-testid="kit-json"]').inputValue();
+  const kit = JSON.parse(kitText);
+  await page.fill('[data-testid="kit-json"]', JSON.stringify({ ...kit, accentColour: "not-a-colour" }, null, 2));
+  await page.fill('[data-testid="kit-change-note"]', "Browser test: bad colour.");
+  await page.click('[data-testid="save-kit"]');
+  await page.waitForFunction(() => /accentColour must be a hex colour/.test(document.querySelector('[data-testid="kit-message"]')?.textContent || ""), null, { timeout: 30000 });
+  record("a style kit with a bad colour is refused", true);
+  await page.fill('[data-testid="kit-json"]', JSON.stringify({ ...kit, accentColour: "#2F5D62" }, null, 2));
+  await page.fill('[data-testid="kit-change-note"]', "Browser test: accent colour changed.");
+  await page.click('[data-testid="save-kit"]');
+  await page.waitForFunction(() => /Saved as a new version/.test(document.querySelector('[data-testid="kit-message"]')?.textContent || ""), null, { timeout: 30000 });
+  const kits = await (await page.request.get(`${BASE_URL}/api/admin/studio/kits`)).json();
+  const saved = kits.rows.find((row) => row.kit.id === kit.id);
+  record("a style kit edit is stored as the next version", saved.kit.version === kit.version + 1 && saved.kit.accentColour === "#2F5D62" && saved.versions.length === kit.version + 1, `version ${saved.kit.version}`);
+  const rolled = await (await page.request.post(`${BASE_URL}/api/admin/studio/kits`, { data: { action: "rollback", id: kit.id, toVersion: kit.version, changeNote: "Browser test: restore." } })).json();
+  record("a style kit can be rolled back, as a new version", rolled.ok === true && rolled.kit.version === kit.version + 2 && rolled.kit.accentColour === kit.accentColour, `version ${rolled.kit && rolled.kit.version}`);
   await context.close();
 }
 

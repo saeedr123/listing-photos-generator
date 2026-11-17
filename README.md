@@ -65,6 +65,14 @@ Placeholder deployment shape, to be confirmed by Ali:
 - No invented figures, prices, fees, platform rules, or claims. Unverified items are marked unverified, never built on.
 - No secrets in the repository. Use `.env` (never committed) and a secure secret store.
 
+## Mockup Studio (3D), provisional
+
+A 3D mockup studio lives at `/studio`, with admin screens at `/admin/models` and `/admin/style-kits`. It places the seller's real render on generic 3D devices and printed sheets and exports the ordered image set. It follows a direction change that is provisional until Saeed approves it. Read `docs/mockup-engine.md`, section "3D mockup studio", for what is built, what is tested, and what is not.
+
+- Engine tests: `./tests/run-tests.sh` (needs python3 with Pillow).
+- Browser checks and visual regression: `node tests/visual/studio-visual.cjs`, see the header of that file. Not part of CI.
+- Rebuild the in house models: `node scripts/build-studio-models.mjs`.
+
 ## Repo rule, same as Global Career Studio
 
 This repo is the single source of truth, not manual file drops. Nothing is built on the live tools website until the idea and prompt are approved.

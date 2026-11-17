@@ -340,6 +340,37 @@ A new mockup is only added to the live library after a crisp render test: contai
 
 Mockup graphics and real screenshots stay labelled differently in the tool. A mockup is a presentation frame. It must never be presented as a real sheet screenshot, and it must never carry another seller's product, watermark, review count, badge, or claim. The reconciliation check still applies inside mockups: tab count, price, format, and claims shown on or around the mockup must match the real product.
 
+### 6.7 Decision entry, 2026-11-14: 3D mockup studio. Provisional until Saeed approves
+
+Added 2026-11-17. This entry records the 14 November direction change and what was built for it. It is provisional: PROMPT.md section 7.6 carries the same entry and the same status. Nothing in sections 6.1 to 6.6 is withdrawn.
+
+What it adds:
+
+- A mockup model is a GLB file. The seller's real render is a texture on a named screen or paper mesh.
+- A model registry holds, per model: file reference, screen mesh name, screen aspect, allowed orientations, default camera presets, category, tags, preview thumbnail, licence record, version and status. Records are versioned JSON documents. Admin adds a model with no code change.
+- A shot is model(s) plus camera plus lighting plus background.
+- A style kit holds background colours, accent colour, fonts, badge, text slots and the ordered shot list.
+- A batch turns one design plus one style kit into the ordered image set, as a zip.
+- The 5 SVG frames stay in the registry as basic 2D fallbacks.
+
+Where the code lives, and the module boundaries:
+
+| Part | Location | Notes |
+|---|---|---|
+| Registry rules, fit maths, shot and style kit rules, batch planning, colour extraction, pixel diff, render job interface | `packages/mockup-engine/src/studio/` | Pure. No 3D library, no platform value, no storage implementation. |
+| Registry service and seed loader | `packages/mockup-engine/src/studio/registry-service.ts`, `seeds.ts` | Versioned documents on top of the storage interface. |
+| Object storage interface | `packages/storage/` | See section 9.4. |
+| Scene engine | `apps/web/src/studio/engine/` | Plain three.js. One scene builder feeds both the live preview and the export render. |
+| Live preview | `apps/web/src/studio/components/ShotViewport.tsx` | React Three Fiber 8 and three.js OrbitControls. |
+| Rendered image gate, JPG encoder, zip writer | `packages/export/src/studio-gate.ts`, `encode_jpg.py`, `zip.ts` | Reads every platform value from the platform pack. |
+| Registry records | `packages/mockup-engine/registry/`, `config/style-kits/`, `config/studio.json` | Admin editable, versioned. |
+
+Deviation 1, where rendering runs. Sections 2, 7.1 and 12.2 say render and export run as background jobs. The 3D studio renders in the browser with WebGL. Reason: a WebGL render needs a GPU context, the seller already has one, and no job infrastructure or hosting is chosen. To keep the choice open, the batch flow talks only to the `RenderJobRunner` interface in `packages/mockup-engine/src/studio/render-jobs.ts`. The only implementation today is `BrowserRenderRunner` in `apps/web/src/studio/browser-runner.ts`. A server side or queued runner would implement the same interface, and the plan, the gate and the zip step would not change. What this deviation costs today: the export gate checks the real PNG (size, transparency) and the placement numbers the browser reports, but it does not re-render the scene on the server, so it trusts those reported numbers. The zip is built in the browser. No export history record is written. Saeed to confirm or reject this deviation.
+
+Deviation 2, storage. PROMPT.md section 23 leaves the object storage provider undecided. The studio needs somewhere to keep uploaded GLB files and registry records, so it uses the storage interface with the local file adapter in development. No production adapter exists. In production with no provider named, the studio reports that storage is not configured. It never picks a provider by itself.
+
+Not wired yet: the studio is a separate page at `/studio`. It is not connected to listing packs, the reconciliation check, entitlements, or the export history. Style kit text is admin entered text, not seller product facts, so the reconciliation check in section 7.3 does not run over it. That wiring must be done before the studio output is offered as part of a publishable pack.
+
 ## 7. Export engine and Etsy export settings
 
 ### 7.1 Export engine
@@ -522,14 +553,14 @@ Open questions from brainstorming, not decided: is a 7 day trial, no card, one p
 
 ### 9.4 Provider agnostic adapters, standing rule, 2026-11-10
 
-Billing, AI, email, object storage, auth, and hosting are all swappable through a provider interface or a config choice. No provider is hard coded into the core. Adding or swapping a provider means registering one implementation and naming it in config. It never means rewriting the builder, the templates, the mockups, or the billing core. No real provider key, account, or live charge exists in this build for any of the six areas. The stub stays the only working provider for billing and AI, the email hook sends nothing until a provider send step is registered, auth runs on the local stub or the Prisma provider, object storage has no provider chosen, and hosting has no provider chosen.
+Billing, AI, email, object storage, auth, and hosting are all swappable through a provider interface or a config choice. No provider is hard coded into the core. Adding or swapping a provider means registering one implementation and naming it in config. It never means rewriting the builder, the templates, the mockups, or the billing core. No real provider key, account, or live charge exists in this build for any of the six areas. The stub stays the only working provider for billing and AI, the email hook sends nothing until a provider send step is registered, auth runs on the local stub or the Prisma provider, object storage has a development only local file adapter and no production provider chosen, and hosting has no provider chosen.
 
 | Area | Interface file | Config key | Working implementation now |
 |---|---|---|---|
 | Billing | `packages/billing/src/provider.ts` (`BillingProvider`, registry `registerBillingProvider`, resolver `createBillingProvider`) | `billing_provider` in `config/plans.json` (value `stripe_stub`) | `StripeStubProvider` in `packages/billing/src/stripe-stub.ts`, charge always 0. Stripe later is one more registered provider under its own name, with keys in the secure secret store, never in code. |
 | AI | `packages/ai/src/provider.ts` (`AiProvider`, registry `registerAiProvider`, resolver `createProvider`) | `provider.name` in `config/copy-prompts.json`, overridable by `AI_PROVIDER` in env (see `packages/ai/src/loaders.ts`) | `DevelopmentStubProvider` in the same file, no network call, no key, no spending. A named provider with no registered factory throws instead of silently using the stub. |
 | Email | `packages/billing/src/email-hook.ts` (`EmailHook`, registry `registerEmailProvider`, resolver `createEmailHook`) | `EMAIL_PROVIDER` in env, with `EMAIL_FROM_ADDRESS` and `EMAIL_API_KEY` (see `.env.example`) | No send implementation. The hook returns sent false with reason `no_email_provider_configured` or `email_provider_not_implemented`. A later provider registers a send step only. |
-| Object storage | No storage module exists yet, so no interface file exists yet. Files are only `storage_key` references in the data model (see `docs/database-design.md`), never blobs in the database and never a named provider in code. When upload storage is built, it must follow this same rule: one storage interface, one registered implementation, provider named by config. | `OBJECT_STORAGE_PROVIDER` in env (see `.env.example`), with bucket, region, and credentials by env name only | None. No provider chosen, no bucket, no key. |
+| Object storage | `packages/storage/src/types.ts` (`ObjectStorage`), registry `packages/storage/src/registry.ts` (`registerObjectStorageProvider`, `createObjectStorage`, `resolveObjectStorageConfig`). Added 2026-11-16 for the 3D mockup studio. Files are still only storage key references in the data model, never blobs in the database. | `OBJECT_STORAGE_PROVIDER` in env (see `.env.example`), with `OBJECT_STORAGE_LOCAL_DIR` for the development adapter, and bucket, region, and credentials by env name only | `LocalFileObjectStorage` under the name `local_file`, DEVELOPMENT ONLY, and `InMemoryObjectStorage` for tests. No production provider chosen, no bucket, no key. With no provider named, development uses `local_file` and production reports not configured. Provider swap proved in `tests/storage.test.mjs`. |
 | Auth | `packages/auth/src/stub-provider.ts` (`AuthProvider` interface), registry `packages/auth/src/provider-registry.ts` (`registerAuthProvider`, `resolveAuthProvider`) | `provider` in `AuthConfig` (`packages/auth/src/config.ts`, value `email`) | `LocalStubAuthProvider` (development only) and `PrismaAuthProvider`, both under the name `email`; server wiring registers the stub in development and the Prisma provider in production. Google sign-in is a separate placeholder in `packages/auth/src/google-provider.ts` and is not an `AuthProvider` implementation yet. |
 | Hosting | No host is named in code. Hosting, database, and object storage providers are deployment config choices only (see `docs/deployment.md`). | Env and deployment config only, for example `NEXT_PUBLIC_APP_URL` and `APP_URL` in `.env.example` | None. No hosting provider is chosen, no deployment is executed, no domain is bought. |
 
