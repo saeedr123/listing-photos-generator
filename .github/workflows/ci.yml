@@ -20,12 +20,18 @@ jobs:
         run: npm run lint
       - name: Typecheck
         run: npm run typecheck
+      # The export tests rasterize and encode JPGs with python3 and Pillow.
+      # tests/merge.test.ts (run by npm test) needs it too: without Pillow
+      # its export comes back failed.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Pillow for the export tests
+        run: python3 -m pip install --quiet pillow
       - name: Tests
         run: npm test
       - name: Engine tests (templates, mockups, export, storage, 3D studio)
-        run: |
-          python3 -m pip install --quiet pillow
-          ./tests/run-tests.sh
+        run: ./tests/run-tests.sh
       - name: Validate Prisma schema
         env:
           DATABASE_URL: postgresql://user:password@localhost:5432/listing_photos_generator?schema=public
