@@ -1,0 +1,102 @@
+{
+  "shotId": "what-is-inside",
+  "fullWidthPx": 3000,
+  "fullHeightPx": 2000,
+  "referenceWidthPx": 750,
+  "referenceHeightPx": 500,
+  "downsampleFactor": 4,
+  "supersampleUsed": 2,
+  "framing": {
+    "widthPx": 3000,
+    "heightPx": 2000,
+    "camera": {
+      "position": [
+        0,
+        1.42,
+        0.32
+      ],
+      "target": [
+        0,
+        0,
+        -0.035
+      ],
+      "fovDeg": 20
+    },
+    "surfaces": [
+      {
+        "modelIndex": 0,
+        "surfaceId": "page",
+        "cornersPx": [
+          [
+            206.52893830980383,
+            580.6397972580546
+          ],
+          [
+            1003.1742590378099,
+            572.2323346369438
+          ],
+          [
+            980.3268157888574,
+            1711.1522538175138
+          ],
+          [
+            140.85479636506275,
+            1711.1522538175138
+          ]
+        ]
+      },
+      {
+        "modelIndex": 1,
+        "surfaceId": "page",
+        "cornersPx": [
+          [
+            1100.5457101568963,
+            580.6397972580546
+          ],
+          [
+            1901.2823065907874,
+            572.2323346369438
+          ],
+          [
+            1919.7360097118974,
+            1711.1522538175138
+          ],
+          [
+            1080.2639902881026,
+            1711.1522538175138
+          ]
+        ]
+      },
+      {
+        "modelIndex": 2,
+        "surfaceId": "page",
+        "cornersPx": [
+          [
+            1994.5624820039889,
+            580.6397972580546
+          ],
+          [
+            2799.390354143765,
+            572.2323346369438
+          ],
+          [
+            2859.1452036349374,
+            1711.1522538175138
+          ],
+          [
+            2019.6731842111426,
+            1711.1522538175138
+          ]
+        ]
+      }
+    ]
+  },
+  "renderer": {
+    "runner": "browser-webgl",
+    "threeRevision": "170",
+    "glRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+    "maxTextureSizePx": 8192
+  },
+  "warnings": []
+}

@@ -24,6 +24,7 @@ import {
 import { BrowserRenderRunner } from "../browser-runner";
 import { decodeDesignFile, type DesignPageImage } from "../engine/loaders";
 import { exportSet, gateRenderedImage, type ExportSetResult } from "../export-set";
+import { compareWithReference, toReferenceRender } from "../harness";
 import { ShotViewport } from "./ShotViewport";
 
 interface CatalogResponse {
@@ -253,6 +254,19 @@ export function StudioClient() {
         let binary = "";
         for (let i = 0; i < rendered.png.length; i += 0x8000) binary += String.fromCharCode(...rendered.png.subarray(i, i + 0x8000));
         return { pngBase64: btoa(binary), widthPx: rendered.widthPx, heightPx: rendered.heightPx, framing: rendered.framing, surfaces: rendered.surfaces, warnings: rendered.warnings, renderer: rendered.renderer, supersampleUsed: rendered.supersampleUsed };
+      },
+      referenceRender: async (shotId: string) => {
+        if (!plan || !data) throw new Error("No plan yet.");
+        const item = plan.items.find((i) => i.shotId === shotId);
+        if (!item) throw new Error(`Shot ${shotId} is not in the plan.`);
+        return toReferenceRender(await makeRunner(1).renderItem(item, { supersample: data.config.render.supersample }), data.config);
+      },
+      compareReference: async (shotId: string, referencePngBase64: string, referenceFraming: Parameters<typeof compareWithReference>[2]) => {
+        if (!plan || !data) throw new Error("No plan yet.");
+        const item = plan.items.find((i) => i.shotId === shotId);
+        if (!item) throw new Error(`Shot ${shotId} is not in the plan.`);
+        const rendered = await makeRunner(1).renderItem(item, { supersample: data.config.render.supersample });
+        return compareWithReference(rendered, referencePngBase64, referenceFraming, data.config);
       },
       gateItem: async (shotId: string) => {
         if (!plan || !data) throw new Error("No plan yet.");
