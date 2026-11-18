@@ -136,6 +136,36 @@ Still open after the gap fill:
 - Proof pack gaps: image 04 blank tablet screen, no portrait mobile-view or square who-it-is-for proof, 6 templates left out, no frame premium until Saeed approves it in plain words.
 - Saeed-only decisions: price, currency, Stripe account, VAT treatment with accountant confirmation, refund policy final wording with a legal check, AI provider choice and budget cap, AI credit counts, hosting and database and storage providers, domain on hold, mockup frame licences, reconciliation fix vs flag, trial shape, mockup pricing, which niche pack converts first.
 
+## ready to use on a server, stacked on the studio pull request, not merged, not deployed
+
+Work on branch claude/listing-photos-generator-go-live, in draft pull request saeedr123/listing-photos-generator#2, stacked on pull request saeedr123/listing-photos-generator#1 (its base is the studio branch, not main). Merge #1 first. Not merged, not deployed. No server bought, no domain or subdomain created, no spending, no contact with real people.
+
+Owner answers, 2026-11-18: use it themselves first and then open it to sellers ("both"), start the unblocked work ("yes"), designs are image files ("images"), and "we can host for now on our own site nvconsult.eu".
+
+Verification by the engineering session, 2026-11-18, at the head of the branch: 366 tests pass, 0 fail (root vitest 48, tests/run-tests.sh 194, auth 13, builder 17, admin 7, ai 39, billing 34, billing-provider 9, and 5 database integration tests against a real PostgreSQL 16). Typecheck passes, lint passes, Next production build passes. No em dashes or en dashes (the CI scan). Browser checks on the production build against a fresh PostgreSQL 16, headless Chromium with a software GPU: seller flow 18 of 18, pack to studio flow 8 of 8, studio and admin 68 of 68 (all 10 shots match their stored reference renders, 0.000 percent of pixels differ). The CI workflow now starts a PostgreSQL service and runs the database integration tests.
+
+Built and tested:
+- Real database path. Migrations 0001 to 0005 applied to PostgreSQL 16. Three bugs found that the test doubles had hidden, all fixed: a required copy prompt column the builder never fills, an export pointing at a reconciliation check that was never stored, and a template slug written into a UUID column. The Prisma client was never loaded inside the Next build; fixed. Reference data (the Etsy platform and pack) is loaded once by npm run db:setup, which also creates the first admin from LPG_SEED_ADMIN_* when none exists.
+- Seller accounts on the server: sign up, sign in, password change, account deletion and the seller's own audit log, with the HttpOnly session cookie. The browser demo store is deleted. Packs, versions and rollback, the export check, review links with comments, the dashboard, profile and settings now all run through server actions with ownership checks.
+- Production refuses to start on the in-memory development store unless LPG_ALLOW_MEMORY_STORE=true is set on purpose.
+- /studio and its API need a signed-in account. Sign up is limited by the auth module (5 per hour per address). Rate limits from config/rate-limits.json on pack creation, export, review links, comments, the studio gate, the catalog and admin uploads. The visitor address comes from X-Forwarded-For, counted LPG_TRUSTED_PROXY_HOPS places from the right.
+- Studio connected to listing packs: open a pack in the studio, write the headline, bullets and badge, check them against the product facts before export, and record the export in the pack's history. The free plan limit (1 pack) and the basic-only mockup rule come from config/plans.json. Admins are not limited.
+- Admin: human review form for the premium label (each criterion, approved or rejected, a note, reviewer taken from the signed-in admin) and preview thumbnails captured from the live preview.
+- Deployment package: Dockerfile, deploy/ (compose stack with the app, PostgreSQL 16 and Caddy; start script; env example; backup script), GET /api/health. Hosting finding and steps in docs/deployment-nvconsult.md. The start script was run twice against a fresh PostgreSQL: migrations once, admin once, health 200 both times.
+
+Not built, not verified, or waiting, in plain words:
+- The Docker image was never built and the compose stack never started: this environment has no Docker. Caddy HTTPS and the backup restore are untested.
+- nvconsult.eu itself (WordPress on Hostinger web hosting) cannot run the app. It needs a separate server reached through a subdomain. The subdomain name and the server are not chosen.
+- Billing is still a stub: every seller is on the free plan. No password reset and no email. No privacy policy or terms pages. Product files in the builder are stored as metadata only, not uploaded.
+- Rate limits are counted in one process's memory: one app container only.
+- Everything from the 2026-11-17 entry above that is not listed as built here still stands: no human visual review, no real product render, one browser only, rendering in the browser, the decisions waiting on Saeed.
+
+Decisions waiting on the owner for this work:
+1. The subdomain name on nvconsult.eu.
+2. The server: any Linux VPS that runs Docker, Hostinger's own VPS included. No price is given here.
+3. Where nvconsult.eu links to the app.
+4. Before opening to sellers: billing, an email provider for password reset, privacy policy and terms wording.
+
 ## 3D mockup studio, 2026-11-17, provisional
 
 3D mockup studio built on branch claude/listing-photos-generator-mockup-cj66s8, in pull request saeedr123/listing-photos-generator#1, marked ready for review on 2026-11-17, not merged. Do not merge until Saeed answers the decisions listed below. No spending, no live site, no contact with real people, no licence bought. The 14 November direction change it follows is PROVISIONAL until Saeed approves it (PROMPT.md section 7.6, docs/architecture.md section 6.7).
