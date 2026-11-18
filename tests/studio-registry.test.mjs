@@ -12,6 +12,7 @@ import { InMemoryObjectStorage } from "../packages/storage/src/index.ts";
 import {
   RegistryValidationError,
   StudioRegistry,
+  applyHumanReview,
   duplicateModel,
   editModel,
   exportSettingsFromPack,
@@ -476,5 +477,50 @@ describe("registry service: a new GLB model is added with zero code changes", ()
     assert.equal(catalog.models.length, 9);
     assert.equal(catalog.shots.length, 10);
     assert.ok(catalog.models.every((m) => m.renderer === "glb-3d"));
+  });
+});
+
+describe("human visual review", () => {
+  const review = (overrides = {}) => ({ criteria: allCriteria, decision: "approved", approvedBy: "Saeed", note: "Checked every shot at 3000 by 2000 on a calibrated screen.", ...overrides });
+
+  it("an approved review with every criterion met labels the model premium, and the model then validates", () => {
+    const next = applyHumanReview({ ...laptop(), status: "published", previewedWithRealRender: true }, review(), ctx);
+    assert.equal(next.qualityLabel, "premium");
+    assert.equal(next.version, 2);
+    assert.equal(next.humanReview.reviewedBy, "tester");
+    assert.equal(next.humanReview.approvedBy, "Saeed");
+    assert.match(next.changeNote, /labelled premium/);
+    assert.deepEqual(validateModelEntry(next), []);
+  });
+
+  it("an approved review with a criterion not met keeps the model basic", () => {
+    const next = applyHumanReview(laptop(), review({ criteria: { ...allCriteria, depth: false } }), ctx);
+    assert.equal(next.qualityLabel, "basic");
+    assert.match(next.changeNote, /not every premium criterion is met/);
+  });
+
+  it("a rejected review keeps the model basic and is still recorded", () => {
+    const next = applyHumanReview(laptop(), review({ decision: "rejected" }), ctx);
+    assert.equal(next.qualityLabel, "basic");
+    assert.equal(next.humanReview.decision, "rejected");
+  });
+
+  it("the reviewer comes from the signed in admin, not from the input", () => {
+    const next = applyHumanReview(laptop(), { ...review(), reviewedBy: "someone else" }, { actor: "admin@example.test", now: "2026-11-18T10:00:00.000Z" });
+    assert.equal(next.humanReview.reviewedBy, "admin@example.test");
+  });
+
+  it("needs an approver and a note", () => {
+    assert.throws(() => applyHumanReview(laptop(), review({ approvedBy: " " }), ctx), /approves/);
+    assert.throws(() => applyHumanReview(laptop(), review({ note: "" }), ctx), /note/);
+  });
+
+  it("the registry service stores the review as a new version", async () => {
+    const storage = new InMemoryObjectStorage();
+    const registry = new StudioRegistry({ storage, seeds, inspectModelFile: async (key) => inspectGlb(new Uint8Array(readFileSync(resolveBuiltinAssetPath(ROOT, key)))) });
+    const saved = await registry.recordHumanReview("phone-generic", review({ criteria: { ...allCriteria, lifestyleOrDeskScene: false } }), ctx);
+    assert.equal(saved.version, 2);
+    assert.equal(saved.qualityLabel, "basic");
+    assert.deepEqual((await registry.models.history("phone-generic")).map((m) => m.version), [1, 2]);
   });
 });

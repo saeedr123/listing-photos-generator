@@ -233,6 +233,33 @@ async function adminFlow(browser) {
   const status = await page.locator(`[data-model-id="${id}"] [data-testid="row-status"]`).innerText();
   record("the model is enabled through admin, with no code change", status === "published", `status ${status}`);
 
+  // Thumbnail from the preview, saved with the model.
+  await page.click('[data-testid="capture-thumbnail"]');
+  await page.waitForFunction(() => /Thumbnail captured/.test(document.querySelector('[data-testid="admin-message"]')?.textContent || ""), null, { timeout: 120000 });
+  await page.fill('[data-testid="change-note"]', "Thumbnail added by the browser test.");
+  await page.click('[data-testid="save-model"]');
+  await page.waitForFunction(() => /Saved as a new version/.test(document.querySelector('[data-testid="admin-message"]')?.textContent || ""), null, { timeout: 60000 });
+  await page.waitForSelector(`[data-model-id="${id}"] [data-testid="row-thumbnail"]`, { timeout: 60000 });
+  const thumbOk = await page.evaluate((modelId) => { const img = document.querySelector(`[data-model-id="${modelId}"] [data-testid="row-thumbnail"]`); return Boolean(img && img.complete && img.naturalWidth === 600 && img.naturalHeight === 400); }, id);
+  record("a preview thumbnail is captured, stored and shown", thumbOk);
+  // Saving a published model makes a preview version; enable it again.
+  await page.fill('[data-testid="change-note"]', "Enabled again after the thumbnail.");
+  await page.click('[data-testid="enable-model"]');
+  await page.waitForFunction(() => /Enabled\. The model can now be used/.test(document.querySelector('[data-testid="admin-message"]')?.textContent || ""), null, { timeout: 60000 });
+
+  // Human review: not every criterion met keeps the model basic.
+  for (const key of ["realisticPerspective", "softRealisticShadows", "screenCrispAtExportSize"]) await page.check(`[data-testid="criterion-${key}"]`);
+  await page.fill('[data-testid="review-approver"]', "Test owner");
+  await page.fill('[data-testid="review-note"]', "Browser test review. Not a real review.");
+  await page.click('[data-testid="record-review"]');
+  await page.waitForFunction(() => /Review recorded/.test(document.querySelector('[data-testid="admin-message"]')?.textContent || ""), null, { timeout: 60000 });
+  record("a review with criteria not met keeps the model basic", (await page.locator('[data-testid="quality-label"]').innerText()) === "basic");
+  // Every criterion met and approved: premium.
+  for (const key of ["depth", "lifestyleOrDeskScene", "realisticMaterialsAndEdges"]) await page.check(`[data-testid="criterion-${key}"]`);
+  await page.click('[data-testid="record-review"]');
+  await page.waitForFunction(() => document.querySelector('[data-testid="quality-label"]')?.textContent === "premium", null, { timeout: 60000 });
+  record("an approved review with every criterion met labels the model premium", true);
+
   const catalog = await (await page.request.get(`${BASE_URL}/api/studio/catalog`)).json();
   const inCatalog = catalog.catalog.models.find((m) => m.id === id);
   record("the new model is in the studio catalog, ready for shots and batch export", Boolean(inCatalog) && inCatalog.status === "published" && inCatalog.modelFile.storageKey.startsWith("models/"), inCatalog ? inCatalog.modelFile.storageKey : "missing");

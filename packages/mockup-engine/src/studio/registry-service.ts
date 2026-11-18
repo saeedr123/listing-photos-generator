@@ -8,6 +8,7 @@ import type { ObjectStorage } from "../../../storage/src/types.ts";
 import { VersionedDocStore } from "../../../storage/src/versioned-docs.ts";
 import type { GlbInfo } from "./glb-inspect.ts";
 import {
+  applyHumanReview,
   duplicateModel,
   editModel,
   hideModel,
@@ -16,6 +17,7 @@ import {
   rollbackModel,
   validateEntryAgainstGlb,
   validateModelEntry,
+  type HumanReviewInput,
   type VersionContext,
 } from "./model-registry.ts";
 import { shotStatusUsable, validateShot } from "./shots.ts";
@@ -151,6 +153,10 @@ export class StudioRegistry {
 
   async publishModel(id: string, changeNote: string, context: VersionContext): Promise<ModelRegistryEntry> {
     return this.storeModel(publishModel(await this.requireModel(id), changeNote, context));
+  }
+
+  async recordHumanReview(id: string, input: HumanReviewInput, context: VersionContext): Promise<ModelRegistryEntry> {
+    return this.storeModel(applyHumanReview(await this.requireModel(id), input, context));
   }
 
   async rollbackModel(id: string, toVersion: number, reason: string, context: VersionContext): Promise<ModelRegistryEntry> {
