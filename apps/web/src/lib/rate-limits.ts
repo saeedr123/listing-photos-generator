@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { RateLimiter } from "../../../../packages/auth/src/rate-limit.ts";
 import { PrismaRateLimitStore, type PrismaRateLimitClient } from "../../../../packages/auth/src/prisma-rate-limit-store.ts";
 import { getPrismaClient } from "./db";
+import { repoRoot } from "./repo-root";
 import { rateLimitMessage } from "../../../../packages/auth/src/config.ts";
 
 export type RateLimitName =
@@ -40,7 +41,7 @@ export function sharedRateLimiter(): Promise<RateLimiter> {
 
 function rules(): Record<string, Rule> {
   if (!holder.__lpgRateRules) {
-    const path = join(process.cwd(), "..", "..", "config", "rate-limits.json");
+    const path = join(repoRoot(), "config", "rate-limits.json");
     const parsed = JSON.parse(readFileSync(path, "utf8")) as { rules: Record<string, Rule> };
     holder.__lpgRateRules = parsed.rules;
   }

@@ -21,12 +21,13 @@ import {
 } from "../../../../packages/billing/src/index.ts";
 import type { PublicUser } from "../../../../packages/auth/src/types.ts";
 import { getPrismaClient } from "./db";
+import { repoRoot } from "./repo-root";
 
 const holder = globalThis as unknown as { __lpgBillingMemory?: InMemoryBillingStore; __lpgPlans?: PlansConfig };
 
 function plansConfig(): PlansConfig {
   if (!holder.__lpgPlans) {
-    holder.__lpgPlans = JSON.parse(readFileSync(join(process.cwd(), "..", "..", "config", "plans.json"), "utf8")) as PlansConfig;
+    holder.__lpgPlans = JSON.parse(readFileSync(join(repoRoot(), "config", "plans.json"), "utf8")) as PlansConfig;
   }
   return holder.__lpgPlans;
 }

@@ -186,7 +186,7 @@ Storage: records and uploaded files go through the object storage interface in `
 ### Export
 
 1. The browser renders each shot offscreen at 2 times the output size on each side, then reduces it onto the kit background and draws the kit text. Result: a lossless PNG.
-2. The PNG goes to `POST /api/studio/gate`, which runs the rendered image gate in `packages/export` (size from the pack, sRGB, no colour change, no stretch, no unapproved crop, no upscaled design, no transparency), then encodes the JPG with the sRGB ICC profile embedded, then reads the profile back from the JPG bytes.
+2. The PNG goes to `POST /api/studio/gate`, which runs the rendered image gate in `packages/export` (size from the pack, sRGB, no colour change, no stretch, no unapproved crop, no upscaled design, no transparency), then encodes the JPG with the sRGB ICC profile embedded, then reads the profile back from the JPG bytes. Since 2026-11-18 the encoding runs in Node with `sharp` (4:4:4 chroma, no colour transform), so it works on Vercel without Python. The profile is inserted by `srgb-icc.ts`, a byte for byte port of `srgb_icc.py`. On a real 3000 by 2000 render the pixels matched the earlier Pillow encoder exactly.
 3. The browser packs the JPGs in listing order with a `manifest.json` into a zip.
 
 Nothing is published automatically.
@@ -237,4 +237,4 @@ That script is not part of `npm test` or CI. It needs a running web app and a br
 - Wired 2026-11-18: `/studio` and its API routes need a signed-in account. The gate, the catalog and admin uploads are rate limited (`config/rate-limits.json`). Premium models are hidden from accounts without premium access (no model is premium today). A studio export is recorded in the pack's export history with its check. Rate limits are counted in one process's memory only.
 - The export gate trusts the placement numbers the browser reports. It checks the real PNG size and transparency itself.
 - No server side or queued render runner. Only the browser runner exists.
-- No production object storage adapter.
+- Production object storage: the `vercel_blob` adapter, added 2026-11-18 for Vercel. Tested through a fake of the Blob calls only, not against a real Blob store.

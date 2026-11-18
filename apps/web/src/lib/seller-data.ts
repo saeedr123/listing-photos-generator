@@ -32,6 +32,7 @@ import { newAuditEvent } from "../../../../packages/auth/src/audit.ts";
 import type { AuditAction } from "../../../../packages/auth/src/types.ts";
 import { getPrismaClient } from "./db";
 import { getServerAuthService } from "./server-auth";
+import { repoRoot } from "./repo-root";
 
 export type SellerDataMode = "prisma" | "memory";
 
@@ -43,9 +44,6 @@ export interface SellerData {
   audit: AuditAppend;
 }
 
-function repoRoot(): string {
-  return join(process.cwd(), "..", "..");
-}
 
 function platformDefinition(): PlatformPackDefinition {
   return JSON.parse(readFileSync(join(repoRoot(), "config", "platform-packs", "etsy.v1.json"), "utf8")) as PlatformPackDefinition;

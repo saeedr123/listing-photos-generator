@@ -38,14 +38,9 @@ npm run prisma:format    # format prisma/schema.prisma
 
 ## How to deploy
 
-Decided 2026-11-18: host for now on a subdomain of nvconsult.eu, on a separate server that runs Docker. The WordPress site cannot run this app. Full steps, checks and open items: `docs/deployment-nvconsult.md`.
+Decided 2026-11-18: **Vercel** at **mockups.nvconsult.eu**, with Neon PostgreSQL and Vercel Blob. Root Directory `apps/web`; the build (`scripts/vercel-build.mjs`) generates the Prisma client, runs migrations for production, creates the first admin and builds the app. Full steps, settings and checks: `docs/deployment-vercel.md`. Not yet deployed: nothing has been created on Vercel.
 
-```bash
-cp deploy/env.example deploy/.env   # fill it in
-docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --build
-```
-
-The container stack was written and its start script tested against PostgreSQL, but the image has not been built yet. The subdomain name and the server are still to be chosen. Nothing has been bought.
+Fallback, your own server with Docker: `docs/deployment-nvconsult.md` and `deploy/`. That image has not been built yet.
 
 Database setup without Docker, against any PostgreSQL:
 

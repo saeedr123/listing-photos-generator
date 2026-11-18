@@ -14,6 +14,10 @@ import { checkSurfaceCrisp, surfaceAspectMismatch, type RenderedSurfaceReport } 
 import { requireSellerApi } from "@/lib/studio-api-auth";
 import { getStudioServer, jsonError } from "@/lib/studio-server";
 
+// Encoding a 3000 px JPG takes well under a second; the limit leaves room
+// for a slow cold start on Vercel.
+export const maxDuration = 60;
+
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 

@@ -14,6 +14,24 @@ import { PrismaClient } from "@prisma/client";
 
 const holder = globalThis as unknown as { __lpgPrisma?: Promise<unknown | null> };
 
+/**
+ * The connection URL the app uses. Neon's pooled host (a name with
+ * "-pooler") runs PgBouncer in transaction mode, where Prisma needs
+ * pgbouncer=true. It is added when missing. Any other URL is unchanged.
+ */
+export function runtimeDatabaseUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.includes("-pooler") && !parsed.searchParams.has("pgbouncer")) {
+      parsed.searchParams.set("pgbouncer", "true");
+      return parsed.toString();
+    }
+  } catch {
+    // Not a URL the parser understands: use it as given.
+  }
+  return url;
+}
+
 export function databaseConfigured(): boolean {
   return Boolean(process.env.DATABASE_URL);
 }
@@ -23,7 +41,7 @@ export function getPrismaClient(): Promise<unknown | null> {
     holder.__lpgPrisma = (async () => {
       if (!databaseConfigured()) return null;
       try {
-        const client = new PrismaClient();
+        const client = new PrismaClient({ datasourceUrl: runtimeDatabaseUrl(process.env.DATABASE_URL ?? "") });
         await client.$connect();
         return client;
       } catch (error) {

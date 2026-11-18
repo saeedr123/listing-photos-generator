@@ -24,11 +24,9 @@ import {
   type StudioConfig,
   type StudioExportSettings,
 } from "@listing-photos-generator/mockup-engine/studio-server";
+import { repoRoot } from "./repo-root";
+export { repoRoot };
 
-export function repoRoot(): string {
-  // The web app runs with its working directory at apps/web.
-  return join(process.cwd(), "..", "..");
-}
 
 /** The platform pack type the export engine uses. Values are read from the pack file, never set here. */
 export interface StudioPlatformPack extends PlatformPackLike {
