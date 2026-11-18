@@ -297,7 +297,7 @@ model ListingPackCopy {
   listing_pack_id        String   @unique @db.Uuid
   platform_id            String   @db.Uuid
   pack_version_id        String   @db.Uuid
-  copy_prompt_version_id String   @db.Uuid
+  copy_prompt_version_id String?  @db.Uuid
   title_text             String?
   title_char_count       Int?
   description_text       String?
@@ -311,7 +311,7 @@ model ListingPackCopy {
   listing_pack        ListingPack              @relation(fields: [listing_pack_id], references: [id])
   platform            Platform                 @relation(fields: [platform_id], references: [id])
   pack_version        PlatformPackVersion      @relation(fields: [pack_version_id], references: [id])
-  copy_prompt_version CopyPromptVersion        @relation(fields: [copy_prompt_version_id], references: [id])
+  copy_prompt_version CopyPromptVersion?       @relation(fields: [copy_prompt_version_id], references: [id])
   versions            ListingPackCopyVersion[]
 
   @@index([platform_id, pack_version_id])
@@ -885,8 +885,8 @@ model Subscription {
   created_at               DateTime  @default(now()) @db.Timestamptz(6)
   updated_at               DateTime  @updatedAt @db.Timestamptz(6)
 
-  user User @relation(fields: [user_id], references: [id])
-  plan Plan @relation(fields: [plan_id], references: [id])
+  user            User            @relation(fields: [user_id], references: [id])
+  plan            Plan            @relation(fields: [plan_id], references: [id])
   refund_requests RefundRequest[]
 
   @@index([user_id])
@@ -924,16 +924,16 @@ model Trial {
 // requestRefund, which is not a valid UUID. The billing store returns
 // the persisted row id.
 model RefundRequest {
-  id              String    @id @default(uuid()) @db.Uuid
-  user_id         String    @db.Uuid
-  subscription_id String?   @db.Uuid
+  id              String   @id @default(uuid()) @db.Uuid
+  user_id         String   @db.Uuid
+  subscription_id String?  @db.Uuid
   reason          String
-  status          String    @default("pending_admin_review")
-  requested_at    DateTime  @db.Timestamptz(6)
+  status          String   @default("pending_admin_review")
+  requested_at    DateTime @db.Timestamptz(6)
   policy_text     String
   note            String
-  created_at      DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime  @updatedAt @db.Timestamptz(6)
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @updatedAt @db.Timestamptz(6)
 
   user         User          @relation(fields: [user_id], references: [id])
   subscription Subscription? @relation(fields: [subscription_id], references: [id])

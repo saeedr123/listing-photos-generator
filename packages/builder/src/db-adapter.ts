@@ -147,7 +147,11 @@ export function builderPackToDbRows(pack: ListingPack, resolution: PlatformResol
   for (const claim of f.claims) {
     facts.push({ product_id: pack.productId, fact_key: "claim", fact_value_text: claim, fact_value_number: null, verified_by_user_id: pack.userId, verification_note: f.verificationNote || null });
   }
-  const firstTemplateId = pack.templateIds.length > 0 ? (resolution.templateIdBySlug(pack.templateIds[0]) ?? pack.templateIds[0]) : null;
+  // Only a resolved template row id may go in template_id, which is a
+  // UUID foreign key. A slug with no row writes null: the full template
+  // list is kept in the pack version snapshot either way. Writing the
+  // slug itself failed on a real database (found 2026-11-18).
+  const firstTemplateId = pack.templateIds.length > 0 ? resolution.templateIdBySlug(pack.templateIds[0]) : null;
   return {
     listingPack: {
       id: pack.id,

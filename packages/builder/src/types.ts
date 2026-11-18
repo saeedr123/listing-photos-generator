@@ -122,6 +122,17 @@ export interface ReconciliationResult {
   summary: string;
 }
 
+// A reconciliation check as stored. Every export points at one, so the
+// check that let an export through (or stopped it) is kept on record.
+export interface ReconciliationCheckRecord {
+  id: string;
+  listingPackId: string;
+  status: ReconciliationStatus;
+  checkedAt: string;
+  checkedBy: "system" | "user";
+  summary: string;
+}
+
 export interface ExportRecord {
   id: string;
   listingPackId: string;

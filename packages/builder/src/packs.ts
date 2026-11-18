@@ -9,17 +9,7 @@
 // deletable with the listing pack. No training use is made of them here.
 
 import { randomUUID } from "node:crypto";
-import type {
-  AccountDeletionRequest,
-  Edition,
-  ExportRecord,
-  ListingPack,
-  ListingPackCopy,
-  PackStatus,
-  PackVersion,
-  ProductFacts,
-  ReconciliationResult,
-} from "./types.ts";
+import type { AccountDeletionRequest, Edition, ExportRecord, ListingPack, ListingPackCopy, PackStatus, PackVersion, ProductFacts, ReconciliationCheckRecord, ReconciliationResult } from "./types.ts";
 import { displayedValuesFromPack, reconcilePack } from "./reconciliation.ts";
 import { etsyPack } from "./config.ts";
 import { sampleCopy, sampleFacts } from "./sample-content.ts";
@@ -44,6 +34,7 @@ export interface PackStore {
   listPacksForUser(userId: string): Promise<ListingPack[]>;
   saveVersion(version: PackVersion): Promise<void>;
   listVersions(listingPackId: string): Promise<PackVersion[]>;
+  saveReconciliationCheck(check: ReconciliationCheckRecord): Promise<void>;
   saveExport(record: ExportRecord): Promise<void>;
   listExports(listingPackId: string): Promise<ExportRecord[]>;
   saveDeletionRequest(request: AccountDeletionRequest): Promise<void>;
@@ -57,6 +48,7 @@ export class InMemoryPackStore implements PackStore {
   private packs = new Map<string, ListingPack>();
   private versions = new Map<string, PackVersion[]>();
   private exports = new Map<string, ExportRecord[]>();
+  private checks = new Map<string, ReconciliationCheckRecord>();
   private deletions = new Map<string, AccountDeletionRequest>();
 
   async savePack(pack: ListingPack): Promise<void> {
@@ -81,7 +73,18 @@ export class InMemoryPackStore implements PackStore {
     return [...(this.versions.get(listingPackId) ?? [])].sort((a, b) => a.versionNumber - b.versionNumber);
   }
 
+  async saveReconciliationCheck(check: ReconciliationCheckRecord): Promise<void> {
+    this.checks.set(check.id, check);
+  }
+
+  async findReconciliationCheck(id: string): Promise<ReconciliationCheckRecord | null> {
+    return this.checks.get(id) ?? null;
+  }
+
   async saveExport(record: ExportRecord): Promise<void> {
+    if (!this.checks.has(record.reconciliationCheckId)) {
+      throw new Error("An export must point at a stored reconciliation check.");
+    }
     const list = this.exports.get(record.listingPackId) ?? [];
     list.push(record);
     this.exports.set(record.listingPackId, list);
@@ -259,6 +262,16 @@ export class PackService {
       return null;
     }
     const reconciliation = reconcilePack(pack.productFacts, displayedValuesFromPack(pack), pack.hasSampleContent);
+    // The check is stored first, so the export can point at it.
+    const check: ReconciliationCheckRecord = {
+      id: randomUUID(),
+      listingPackId: pack.id,
+      status: reconciliation.status,
+      checkedAt: reconciliation.checkedAt,
+      checkedBy: "system",
+      summary: reconciliation.summary,
+    };
+    await this.store.saveReconciliationCheck(check);
     const record: ExportRecord = {
       id: randomUUID(),
       listingPackId: pack.id,
@@ -271,7 +284,7 @@ export class PackService {
       imageCount: pack.images.length,
       status: reconciliation.canExport ? "queued" : "failed",
       errorMessage: reconciliation.canExport ? null : reconciliation.summary,
-      reconciliationCheckId: randomUUID(),
+      reconciliationCheckId: check.id,
       createdAt: new Date().toISOString(),
     };
     if (reconciliation.canExport && this.exportRunner) {

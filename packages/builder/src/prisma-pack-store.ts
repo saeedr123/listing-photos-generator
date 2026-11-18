@@ -28,7 +28,7 @@
 // version was used, never a guessed prompt.
 
 import type { PackStore } from "./packs.ts";
-import type { AccountDeletionRequest, ExportRecord, ListingPack, PackVersion } from "./types.ts";
+import type { AccountDeletionRequest, ExportRecord, ListingPack, PackVersion, ReconciliationCheckRecord } from "./types.ts";
 import { builderPackToDbRows, dbRowsToBuilderPack } from "./db-adapter.ts";
 import type { PlatformResolution } from "./db-adapter.ts";
 import { PrismaPackVersionStore } from "./pack-version-store.ts";
@@ -56,6 +56,9 @@ export interface PrismaPackClient {
     create(args: { data: Record<string, unknown> }): Promise<Record<string, unknown>>;
     findMany(args: { where: Record<string, unknown>; orderBy?: Record<string, unknown> }): Promise<Record<string, unknown>[]>;
     findUnique(args: { where: Record<string, unknown> }): Promise<Record<string, unknown> | null>;
+  };
+  reconciliationCheck: {
+    create(args: { data: Record<string, unknown> }): Promise<Record<string, unknown>>;
   };
   export: {
     create(args: { data: Record<string, unknown> }): Promise<Record<string, unknown>>;
@@ -202,6 +205,20 @@ export class PrismaPackStore implements PackStore {
 
   async listVersions(listingPackId: string): Promise<PackVersion[]> {
     return this.packVersions.listPackVersions(listingPackId);
+  }
+
+  async saveReconciliationCheck(check: ReconciliationCheckRecord): Promise<void> {
+    await this.client.reconciliationCheck.create({
+      data: {
+        id: check.id,
+        listing_pack_id: check.listingPackId,
+        platform_id: this.resolution.platformId,
+        pack_version_id: this.resolution.packVersionId,
+        status: check.status,
+        checked_at: new Date(check.checkedAt),
+        checked_by: check.checkedBy,
+      },
+    });
   }
 
   async saveExport(record: ExportRecord): Promise<void> {

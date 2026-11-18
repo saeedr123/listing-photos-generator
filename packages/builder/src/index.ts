@@ -12,6 +12,7 @@ export type {
   ProductFacts,
   ProductFormat,
   ReconciliationItem,
+  ReconciliationCheckRecord,
   ReconciliationResult,
   ReconciliationStatus,
   ReviewComment,
@@ -51,3 +52,5 @@ export { PrismaPackVersionStore } from "./pack-version-store.ts";
 export type { PackVersionClient } from "./pack-version-store.ts";
 export { createRealExportRunner } from "./export-runner.ts";
 export type { ExportRunnerResult as RealExportRunnerResult, RealExportRunnerOptions } from "./export-runner.ts";
+export { seedReferenceData } from "./reference-seed.ts";
+export type { PlatformPackDefinition, ReferenceSeedClient, ReferenceSeedOptions } from "./reference-seed.ts";
