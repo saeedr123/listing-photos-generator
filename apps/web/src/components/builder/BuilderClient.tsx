@@ -380,7 +380,10 @@ export function BuilderClient(props: { pack: ListingPack; userId: string; versio
         <Card title={copy.step6Heading}>
           <p>{copy.shareHelp}</p>
           <p>
-            <Button onClick={() => void doShare()}>{copy.shareButton}</Button>
+            <Button onClick={() => void doShare()}>{copy.shareButton}</Button>{" "}
+            <Button href={"/studio?pack=" + pack.id} variant="secondary">
+              Make listing images in the Mockup Studio
+            </Button>
           </p>
           {sharePath ? (
             <Alert tone="success">

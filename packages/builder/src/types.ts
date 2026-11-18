@@ -89,6 +89,9 @@ export interface ListingPack {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  // Text the seller places on listing images in the mockup studio.
+  // Optional: older packs have none. Stored in the pack version snapshot.
+  studioText?: { headline: string; bullets: string[]; badge: string } | null;
 }
 
 export interface PackVersion {

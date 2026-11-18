@@ -156,7 +156,7 @@ export class PrismaPackStore implements PackStore {
     const latest = versions[versions.length - 1];
     const extraTemplateIds = (latest?.snapshot?.templateIds ?? []) as string[];
     const extraMockupIds = (latest?.snapshot?.mockupIds ?? []) as string[];
-    return dbRowsToBuilderPack({
+    const pack = dbRowsToBuilderPack({
       listingPack: {
         id: String(row["id"]), user_id: String(row["user_id"]), product_id: String(row["product_id"]),
         platform_id: String(row["platform_id"]), pack_version_id: String(row["pack_version_id"]),
@@ -195,6 +195,10 @@ export class PrismaPackStore implements PackStore {
       platformSlug: this.platformSlug,
       packVersionSlug: this.packVersionSlug,
     });
+    // Studio text has no column of its own: it lives in the version snapshot.
+    const studioText = latest?.snapshot?.studioText;
+    if (pack && studioText) pack.studioText = studioText;
+    return pack;
   }
 
   async saveVersion(version: PackVersion): Promise<void> {

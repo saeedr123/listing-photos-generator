@@ -317,6 +317,48 @@ export class PackService {
     return { record, reconciliation };
   }
 
+  /**
+   * Records an image set made outside the pack export flow, such as the
+   * mockup studio. The check that allowed (or stopped) it is stored
+   * first and the export points at it, the same as requestExport.
+   */
+  async recordStudioExport(
+    packId: string,
+    userId: string,
+    input: { check: ReconciliationResult; imageCount: number; format: string; shortestSidePx: number },
+  ): Promise<ExportRecord | null> {
+    const pack = await this.store.findPack(packId);
+    if (!pack) {
+      return null;
+    }
+    const check: ReconciliationCheckRecord = {
+      id: randomUUID(),
+      listingPackId: pack.id,
+      status: input.check.status,
+      checkedAt: input.check.checkedAt,
+      checkedBy: "system",
+      summary: input.check.summary,
+    };
+    await this.store.saveReconciliationCheck(check);
+    const record: ExportRecord = {
+      id: randomUUID(),
+      listingPackId: pack.id,
+      userId,
+      platformId: pack.platformId,
+      packVersionId: pack.packVersionId,
+      exportKind: "images_zip",
+      fileFormat: input.format,
+      shortestSidePx: input.shortestSidePx,
+      imageCount: input.check.canExport ? input.imageCount : 0,
+      status: input.check.canExport ? "ready" : "failed",
+      errorMessage: input.check.canExport ? null : input.check.summary,
+      reconciliationCheckId: check.id,
+      createdAt: new Date().toISOString(),
+    };
+    await this.store.saveExport(record);
+    return record;
+  }
+
   async listExports(packId: string): Promise<ExportRecord[]> {
     return this.store.listExports(packId);
   }

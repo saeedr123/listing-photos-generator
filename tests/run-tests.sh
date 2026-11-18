@@ -18,4 +18,5 @@ node --test \
   tests/studio-batch.test.mjs \
   tests/studio-export.test.mjs \
   tests/db-integration.test.mjs \
-  tests/rate-limits.test.mjs
+  tests/rate-limits.test.mjs \
+  tests/studio-text-check.test.mjs

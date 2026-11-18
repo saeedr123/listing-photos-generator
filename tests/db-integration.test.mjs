@@ -29,6 +29,7 @@ const { PackService } = await import("../packages/builder/src/packs.ts");
 const { PrismaPackStore } = await import("../packages/builder/src/prisma-pack-store.ts");
 const { seedReferenceData } = await import("../packages/builder/src/reference-seed.ts");
 const { maidOfHonorFacts } = await import("../packages/builder/src/test-product.ts");
+const { checkStudioText } = await import("../packages/builder/src/studio-text-check.ts");
 
 const definition = JSON.parse(readFileSync(new URL("../config/platform-packs/etsy.v1.json", import.meta.url), "utf8"));
 const unique = () => randomUUID().slice(0, 8);
@@ -117,5 +118,28 @@ describe("real database", { skip: !enabled && "DATABASE_URL not set or Prisma cl
     const exports = await packs.listExports(pack.id);
     assert.equal(exports.length, 1);
     assert.equal(exports[0].status, result.record.status);
+  });
+
+  it("studio text survives a reload, and a studio export is recorded with its check", async () => {
+    const seller = await auth.register({ email: `studio-${unique()}@example.test`, password: "Integration-Test-Pass-1" }, "10.0.3.1");
+    const packs = new PackService(new PrismaPackStore(prisma, { resolution }));
+    const pack = await packs.createPack({ userId: seller.user.id, edition: "listing-photos-generator", productFacts: { ...maidOfHonorFacts }, nichePackId: null, useSampleContent: false });
+    const studioText = { headline: `${maidOfHonorFacts.tabCount} tabs in Google Sheets`, bullets: ["Guest list"], badge: "" };
+    await packs.savePack({ ...pack, studioText }, seller.user.id, "Image text");
+    const read = await packs.getPack(pack.id);
+    assert.deepEqual(read.studioText, studioText);
+
+    const passing = checkStudioText(read.productFacts, studioText, false);
+    const ok = await packs.recordStudioExport(pack.id, seller.user.id, { check: passing, imageCount: 10, format: "jpg", shortestSidePx: 2000 });
+    assert.equal(ok.status, "ready");
+    const failing = checkStudioText(read.productFacts, { ...studioText, headline: "99 tabs" }, false);
+    const blocked = await packs.recordStudioExport(pack.id, seller.user.id, { check: failing, imageCount: 10, format: "jpg", shortestSidePx: 2000 });
+    assert.equal(blocked.status, "failed");
+    assert.equal(blocked.imageCount, 0);
+    const rows = await prisma.export.findMany({ where: { listing_pack_id: pack.id }, orderBy: { created_at: "asc" } });
+    assert.deepEqual(rows.map((r) => [r.export_kind, r.status, r.image_count]), [["images_zip", "ready", 10], ["images_zip", "failed", 0]]);
+    for (const row of rows) {
+      assert.ok(await prisma.reconciliationCheck.findUnique({ where: { id: row.reconciliation_check_id } }));
+    }
   });
 });

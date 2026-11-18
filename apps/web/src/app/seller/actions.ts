@@ -12,6 +12,7 @@ import { redirect } from "next/navigation";
 import {
   addReviewComment,
   canDeletePack,
+  checkStudioText,
   canEditPack,
   canViewPack,
   createShareLink,
@@ -22,11 +23,13 @@ import {
   type ReconciliationResult,
   type ReviewComment,
   type SellerProfile,
+  type StudioText,
 } from "@listing-photos-generator/builder";
 import type { AuditEvent, PublicUser } from "../../../../../packages/auth/src/types.ts";
 import { SESSION_COOKIE_NAME } from "../../lib/admin-gate";
 import { callerAddress, getCurrentUser } from "../../lib/current-user";
 import { getSellerData } from "../../lib/seller-data";
+import { mayCreatePack } from "../../lib/plan-access";
 import { checkRateLimit } from "../../lib/rate-limits";
 import { getServerAuthService } from "../../lib/server-auth";
 
@@ -150,6 +153,8 @@ export async function createPackAction(request: CreatePackRequest): Promise<Acti
   const limit = await checkRateLimit("packs.create", user.id);
   if (!limit.allowed) return { ok: false, message: limit.message };
   const data = await getSellerData();
+  const plan = await mayCreatePack(user, (await data.packs.listPacks(user.id)).length);
+  if (!plan.allowed) return { ok: false, message: plan.reason };
   const pack = await data.packs.createPack({
     userId: user.id,
     edition: user.edition,
@@ -328,4 +333,81 @@ export async function addReviewCommentAction(token: string, authorLabel: string,
   if (resolved.link.purpose !== "review") return { ok: false, message: "This link is view only. Comments need a review link." };
   const comment = await addReviewComment(data.shares, { shareLinkId: resolved.link.id, listingPackId: resolved.link.listingPackId, authorLabel: String(authorLabel ?? "").slice(0, 80), text: clean });
   return { ok: true, value: comment };
+}
+
+// ---- Mockup studio, working on a pack ------------------------------------------
+
+export interface StudioPackContext {
+  id: string;
+  name: string;
+  studioText: StudioText;
+  hasSampleContent: boolean;
+}
+
+const EMPTY_STUDIO_TEXT: StudioText = { headline: "", bullets: [], badge: "" };
+
+function cleanStudioText(text: StudioText | null | undefined): StudioText {
+  const value = text ?? EMPTY_STUDIO_TEXT;
+  return {
+    headline: String(value.headline ?? "").trim().slice(0, 120),
+    bullets: (Array.isArray(value.bullets) ? value.bullets : []).map((b) => String(b).trim().slice(0, 120)).filter(Boolean).slice(0, 6),
+    badge: String(value.badge ?? "").trim().slice(0, 40),
+  };
+}
+
+export async function studioPackContextAction(packId: string): Promise<ActionResult<StudioPackContext>> {
+  const owned = await ownedPack(packId, canViewPack);
+  if ("error" in owned) return { ok: false, message: owned.error };
+  return {
+    ok: true,
+    value: {
+      id: owned.pack.id,
+      name: owned.pack.productFacts.productName || "(Untitled pack)",
+      studioText: cleanStudioText(owned.pack.studioText),
+      hasSampleContent: owned.pack.hasSampleContent,
+    },
+  };
+}
+
+/** Saves the image text on the pack and returns the fact check for it. */
+export async function saveStudioTextAction(packId: string, text: StudioText): Promise<ActionResult<{ text: StudioText; check: ReconciliationResult }>> {
+  const owned = await ownedPack(packId, canEditPack);
+  if ("error" in owned) return { ok: false, message: owned.error };
+  const clean = cleanStudioText(text);
+  const data = await getSellerData();
+  await data.packs.savePack({ ...owned.pack, studioText: clean }, owned.user.id, "Image text changed in the studio");
+  return { ok: true, value: { text: clean, check: checkStudioText(owned.pack.productFacts, clean, owned.pack.hasSampleContent) } };
+}
+
+/** Fact check of image text against the stored pack facts. Read only. */
+export async function checkStudioTextAction(packId: string, text: StudioText): Promise<ActionResult<ReconciliationResult>> {
+  const owned = await ownedPack(packId, canViewPack);
+  if ("error" in owned) return { ok: false, message: owned.error };
+  return { ok: true, value: checkStudioText(owned.pack.productFacts, cleanStudioText(text), owned.pack.hasSampleContent) };
+}
+
+/**
+ * Records a studio image set in the pack export history. The fact check
+ * runs again here on the server, against the stored pack, so a browser
+ * cannot record a set as passed when its text does not match.
+ */
+export async function recordStudioExportAction(
+  packId: string,
+  text: StudioText,
+  imageCount: number,
+  format: string,
+  shortestSidePx: number,
+): Promise<ActionResult<{ record: ExportRecord; check: ReconciliationResult }>> {
+  const owned = await ownedPack(packId, canEditPack);
+  if ("error" in owned) return { ok: false, message: owned.error };
+  const check = checkStudioText(owned.pack.productFacts, cleanStudioText(text), owned.pack.hasSampleContent);
+  const data = await getSellerData();
+  const record = await data.packs.recordStudioExport(packId, owned.user.id, {
+    check,
+    imageCount: Math.max(0, Math.min(50, Math.floor(Number(imageCount) || 0))),
+    format: String(format).slice(0, 10),
+    shortestSidePx: Math.max(0, Math.floor(Number(shortestSidePx) || 0)),
+  });
+  if (!record) return { ok: false, message: NOT_FOUND };
+  return { ok: true, value: { record, check } };
 }

@@ -27,7 +27,7 @@ export type { EtsyPackConfig, MockupKindConfig, NichePackConfig, TemplateRoleCon
 export { maidOfHonorFacts, formatPrice } from "./test-product.ts";
 export { detectTypeByMagic, validateUpload } from "./upload-validation.ts";
 export type { UploadCandidate, UploadValidation } from "./upload-validation.ts";
-export { displayedValuesFromPack, reconcilePack } from "./reconciliation.ts";
+export { displayedValuesFromPack, displayedValuesFromText, reconcilePack } from "./reconciliation.ts";
 export type { DisplayedValues } from "./reconciliation.ts";
 export { SAMPLE_MARKER, clearSampleContent, containsSampleMarker, sampleCopy, sampleFacts } from "./sample-content.ts";
 export { adminAccessRequiresReason, canAdminAccessPack, canDeletePack, canEditPack, canViewPack } from "./access-control.ts";
@@ -58,3 +58,5 @@ export { PrismaShareLinkStore } from "./prisma-share-link-store.ts";
 export type { PrismaShareLinkClient } from "./prisma-share-link-store.ts";
 export { InMemorySellerProfileStore, PrismaSellerProfileStore, cleanProfileValues } from "./profile-store.ts";
 export type { PrismaSellerProfileClient, SellerProfileStore } from "./profile-store.ts";
+export { checkStudioText, studioTextAsString } from "./studio-text-check.ts";
+export type { StudioText } from "./studio-text-check.ts";
