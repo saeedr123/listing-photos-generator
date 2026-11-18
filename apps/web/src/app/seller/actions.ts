@@ -27,6 +27,7 @@ import type { AuditEvent, PublicUser } from "../../../../../packages/auth/src/ty
 import { SESSION_COOKIE_NAME } from "../../lib/admin-gate";
 import { callerAddress, getCurrentUser } from "../../lib/current-user";
 import { getSellerData } from "../../lib/seller-data";
+import { checkRateLimit } from "../../lib/rate-limits";
 import { getServerAuthService } from "../../lib/server-auth";
 
 export type ActionResult<T> = { ok: true; value: T } | { ok: false; message: string };
@@ -146,6 +147,8 @@ export interface CreatePackRequest {
 export async function createPackAction(request: CreatePackRequest): Promise<ActionResult<{ packId: string }>> {
   const user = await requireUser();
   if (!user) return { ok: false, message: NOT_SIGNED_IN };
+  const limit = await checkRateLimit("packs.create", user.id);
+  if (!limit.allowed) return { ok: false, message: limit.message };
   const data = await getSellerData();
   const pack = await data.packs.createPack({
     userId: user.id,
@@ -238,6 +241,8 @@ export async function restoreVersionAction(packId: string, versionNumber: number
 export async function requestExportAction(packId: string): Promise<ActionResult<{ record: ExportRecord; reconciliation: ReconciliationResult; pack: ListingPack | null }>> {
   const owned = await ownedPack(packId, canEditPack);
   if ("error" in owned) return { ok: false, message: owned.error };
+  const limit = await checkRateLimit("packs.export", owned.user.id);
+  if (!limit.allowed) return { ok: false, message: limit.message };
   const data = await getSellerData();
   const result = await data.packs.requestExport(packId, owned.user.id, "full_pack");
   if (!result) return { ok: false, message: NOT_FOUND };
@@ -258,6 +263,8 @@ export async function deletePackAction(packId: string): Promise<ActionResult<nul
 export async function createShareLinkAction(packId: string, purpose: "share" | "review"): Promise<ActionResult<{ path: string }>> {
   const owned = await ownedPack(packId, canEditPack);
   if ("error" in owned) return { ok: false, message: owned.error };
+  const limit = await checkRateLimit("share.create", owned.user.id);
+  if (!limit.allowed) return { ok: false, message: limit.message };
   const data = await getSellerData();
   const created = await createShareLink(data.shares, { listingPackId: packId, userId: owned.user.id, purpose, expiresInDays: 30 });
   await data.audit({ actorId: owned.user.id, actorRole: "user", action: "share_link.created", targetType: "listing_pack", targetId: packId, detail: { purpose } });
@@ -313,6 +320,8 @@ export async function addReviewCommentAction(token: string, authorLabel: string,
   const clean = String(text ?? "").trim();
   if (clean === "") return { ok: false, message: "Write a comment first." };
   if (clean.length > 2000) return { ok: false, message: "Keep the comment under 2000 characters." };
+  const limit = await checkRateLimit("share.comment", callerAddress());
+  if (!limit.allowed) return { ok: false, message: limit.message };
   const data = await getSellerData();
   const resolved = await resolveShareLink(data.shares, token);
   if (!resolved || !resolved.usable) return { ok: false, message: resolved?.reason ?? "This share link was not found." };

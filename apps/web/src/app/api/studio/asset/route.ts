@@ -3,11 +3,14 @@
 // prefixes are served. Registry documents and anything else are refused.
 
 import { assertValidStorageKey } from "@listing-photos-generator/storage";
+import { requireSellerApi } from "@/lib/studio-api-auth";
 import { PUBLIC_ASSET_PREFIXES, getStudioServer, jsonError } from "@/lib/studio-server";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request): Promise<Response> {
+  const access = await requireSellerApi();
+  if (!access.ok) return access.response;
   const key = new URL(request.url).searchParams.get("key") ?? "";
   try {
     assertValidStorageKey(key);

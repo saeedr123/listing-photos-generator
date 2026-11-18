@@ -12,6 +12,7 @@
 import { join } from "node:path";
 import { ExportError, gateAndEncodeRenderedImage, type RenderedSurfaceGateInput } from "@listing-photos-generator/export";
 import { checkSurfaceCrisp, surfaceAspectMismatch, type RenderedSurfaceReport } from "@listing-photos-generator/mockup-engine/studio";
+import { requireSellerApi } from "@/lib/studio-api-auth";
 import { getStudioServer, jsonError } from "@/lib/studio-server";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,8 @@ interface GateMeta {
 const FILE_NAME = /^[0-9]{2}-[a-z0-9][a-z0-9-]*\.[a-z0-9]+$/;
 
 export async function POST(request: Request): Promise<Response> {
+  const access = await requireSellerApi("studio.gate");
+  if (!access.ok) return access.response;
   let studio;
   try {
     studio = getStudioServer();

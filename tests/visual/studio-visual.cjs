@@ -5,8 +5,9 @@
 // with WebGL. Run it by hand, in the reference browser named in
 // config/studio.json, before a release:
 //
-//   1. Start the web app (the storage directory is a throwaway one):
-//        OBJECT_STORAGE_LOCAL_DIR="$(mktemp -d)" \
+//   1. Start the web app on a THROWAWAY database (this script signs up
+//      test accounts) and a throwaway storage directory:
+//        DATABASE_URL=... OBJECT_STORAGE_LOCAL_DIR="$(mktemp -d)" \
 //        LPG_SEED_ADMIN_EMAIL=admin@example.test LPG_SEED_ADMIN_PASSWORD='choose-a-test-password' \
 //        npm run dev -w apps/web -- -p 3100
 //   2. Compare every shot with its stored reference render:
@@ -54,8 +55,22 @@ function record(name, ok, detail) {
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? `  ${detail}` : ""}`);
 }
 
+// The studio needs a signed in seller. Each run signs up a fresh test
+// account, with its own X-Forwarded-For address so the per address sign
+// up limit does not trip across runs. Use a throwaway database.
+async function signedInSeller(browser) {
+  const forwarded = "10.7." + Math.floor(Math.random() * 250) + "." + Math.floor(Math.random() * 250);
+  const context = await browser.newContext({ viewport: { width: 1400, height: 1000 }, extraHTTPHeaders: { "x-forwarded-for": forwarded } });
+  const page = await context.newPage();
+  await page.goto(`${BASE_URL}/auth/register?next=%2Fdashboard`, { waitUntil: "networkidle", timeout: 180000 });
+  await page.fill('input[type="email"]', `studio-visual-${Date.now()}@example.test`);
+  await page.fill('input[type="password"]', "Studio-Visual-Pass-2026");
+  await Promise.all([page.waitForURL((url) => url.pathname === "/dashboard", { timeout: 60000 }), page.click('button[type="submit"]')]);
+  return page;
+}
+
 async function openStudio(browser) {
-  const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
+  const page = await signedInSeller(browser);
   page.on("pageerror", (error) => console.log(`page error: ${error.message}`));
   await page.goto(`${BASE_URL}/studio?harness=1`, { waitUntil: "networkidle", timeout: 180000 });
   await page.waitForSelector('[data-testid="design-input"]', { timeout: 180000 });
@@ -157,6 +172,14 @@ async function adminFlow(browser) {
 
   const anonymous = await page.request.get(`${BASE_URL}/api/admin/studio/models`);
   record("the admin API refuses a signed out caller", anonymous.status() === 401);
+  for (const path of ["/api/studio/catalog", "/api/studio/asset?key=builtin/models/laptop-generic.glb"]) {
+    const response = await page.request.get(`${BASE_URL}${path}`);
+    record(`${path.split("?")[0]} refuses a signed out caller`, response.status() === 401, `status ${response.status()}`);
+  }
+  const gate = await page.request.post(`${BASE_URL}/api/studio/gate`, { multipart: { meta: "{}" } });
+  record("/api/studio/gate refuses a signed out caller", gate.status() === 401, `status ${gate.status()}`);
+  await page.goto(`${BASE_URL}/studio`, { waitUntil: "networkidle", timeout: 180000 });
+  record("the studio page asks a visitor to sign in", /to use the studio/.test(await page.locator("main").innerText()));
 
   await page.goto(`${BASE_URL}/auth/login?next=%2Fadmin%2Fmodels`, { waitUntil: "networkidle", timeout: 180000 });
   await page.fill('input[type="email"]', email);
