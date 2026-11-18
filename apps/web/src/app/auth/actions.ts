@@ -10,6 +10,7 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SESSION_COOKIE_NAME } from "../../lib/admin-gate";
+import { addressFromForwardedFor, trustedProxyHops } from "../../lib/caller-address";
 import { getServerAuthService } from "../../lib/server-auth";
 
 const GENERIC_FAILURE_MESSAGE = "Email or password is incorrect.";
@@ -26,9 +27,7 @@ function safeNext(value: FormDataEntryValue | null): string {
 }
 
 function callerAddress(): string {
-  const forwarded = headers().get("x-forwarded-for") ?? "";
-  const first = forwarded.split(",")[0]?.trim();
-  return first ? first : "unknown";
+  return addressFromForwardedFor(headers().get("x-forwarded-for"), trustedProxyHops());
 }
 
 // Verifies credentials, sets the httpOnly lpg_session cookie on

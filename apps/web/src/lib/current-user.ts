@@ -5,6 +5,7 @@
 import { cookies, headers } from "next/headers";
 import type { PublicUser } from "../../../../packages/auth/src/types.ts";
 import { SESSION_COOKIE_NAME } from "./admin-gate";
+import { addressFromForwardedFor, trustedProxyHops } from "./caller-address";
 import { getServerAuthService } from "./server-auth";
 
 export async function getCurrentUser(): Promise<PublicUser | null> {
@@ -20,7 +21,5 @@ export async function getCurrentUser(): Promise<PublicUser | null> {
 }
 
 export function callerAddress(): string {
-  const forwarded = headers().get("x-forwarded-for") ?? "";
-  const first = forwarded.split(",")[0]?.trim();
-  return first ? first : "unknown";
+  return addressFromForwardedFor(headers().get("x-forwarded-for"), trustedProxyHops());
 }
