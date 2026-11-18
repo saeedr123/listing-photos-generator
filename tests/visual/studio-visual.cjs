@@ -260,8 +260,10 @@ async function adminFlow(browser) {
   await page.waitForFunction(() => document.querySelector('[data-testid="quality-label"]')?.textContent === "premium", null, { timeout: 60000 });
   record("an approved review with every criterion met labels the model premium", true);
 
-  const catalog = await (await page.request.get(`${BASE_URL}/api/studio/catalog`)).json();
-  const inCatalog = catalog.catalog.models.find((m) => m.id === id);
+  const catalogResponse = await page.request.get(`${BASE_URL}/api/studio/catalog`);
+  const catalog = await catalogResponse.json().catch(() => ({}));
+  if (!catalog.catalog) record("the studio catalog answers after the review", false, `status ${catalogResponse.status()}: ${JSON.stringify(catalog).slice(0, 300)}`);
+  const inCatalog = catalog.catalog ? catalog.catalog.models.find((m) => m.id === id) : undefined;
   record("the new model is in the studio catalog, ready for shots and batch export", Boolean(inCatalog) && inCatalog.status === "published" && inCatalog.modelFile.storageKey.startsWith("models/"), inCatalog ? inCatalog.modelFile.storageKey : "missing");
   const file = await page.request.get(`${BASE_URL}/api/studio/asset?key=${encodeURIComponent(inCatalog ? inCatalog.modelFile.storageKey : "models/none.glb")}`);
   record("the uploaded GLB is served from object storage", file.status() === 200 && (await file.body()).length === 146520);
