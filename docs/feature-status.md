@@ -164,6 +164,8 @@ Not verified:
 
 Steps for the owner: merge #1 then #2, then follow docs/deployment-vercel.md section 3.
 
+Use decided by the owner, 2026-11-18: personal use for now, not sold. Added `LPG_SIGNUP=closed`, which refuses new accounts on the server and shows "Sign up is closed" on the sign up page. Checked on a production build: closed shows the message, unset shows the form. The server side refusal in the register action was reviewed, not exercised in a browser, because the closed page has no form. So billing, email, password reset and legal pages are not blockers for this use. Keep the admin password safe: there is no reset.
+
 ## ready to use on a server, stacked on the studio pull request, not merged, not deployed
 
 Work on branch claude/listing-photos-generator-go-live, in draft pull request saeedr123/listing-photos-generator#2, stacked on pull request saeedr123/listing-photos-generator#1 (its base is the studio branch, not main). Merge #1 first. Not merged, not deployed. No server bought, no domain or subdomain created, no spending, no contact with real people.

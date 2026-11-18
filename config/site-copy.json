@@ -82,7 +82,9 @@
     "toRegister": "No account yet? Create one.",
     "toLogin": "Already have an account? Sign in.",
     "passwordHint": "At least 10 characters.",
-    "logoutButton": "Sign out"
+    "logoutButton": "Sign out",
+    "signupClosedHeading": "Sign up is closed",
+    "signupClosedBody": "This tool is not open for new accounts. If you already have an account, sign in."
   },
   "builder": {
     "heading": "Listing pack builder",

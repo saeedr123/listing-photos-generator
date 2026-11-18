@@ -32,6 +32,8 @@ import { getSellerData } from "../../lib/seller-data";
 import { mayCreatePack } from "../../lib/plan-access";
 import { checkRateLimit } from "../../lib/rate-limits";
 import { getServerAuthService } from "../../lib/server-auth";
+import { signupOpen } from "../../lib/signup";
+import { siteCopy } from "../../config/site-copy";
 
 export type ActionResult<T> = { ok: true; value: T } | { ok: false; message: string };
 
@@ -55,6 +57,11 @@ export async function registerAction(formData: FormData): Promise<{ ok: false; m
   const email = typeof formData.get("email") === "string" ? String(formData.get("email")) : "";
   const password = typeof formData.get("password") === "string" ? String(formData.get("password")) : "";
   const name = typeof formData.get("name") === "string" ? String(formData.get("name")).trim() : "";
+  // Checked on the server, so a closed sign up cannot be bypassed by
+  // calling the action directly.
+  if (!signupOpen()) {
+    return { ok: false, message: siteCopy.auth.signupClosedBody };
+  }
   const service = await getServerAuthService();
   const result = await service.register({ email, password, name: name === "" ? undefined : name }, callerAddress());
   if (!result.ok || !result.user) {

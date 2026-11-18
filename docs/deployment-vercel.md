@@ -6,6 +6,7 @@ Written 2026-11-18. Decided by the owner the same day:
 - Database: **Neon** PostgreSQL, added through Vercel.
 - File storage: **Vercel Blob**.
 - Address: **mockups.nvconsult.eu**. The WordPress site on nvconsult.eu stays as it is.
+- Use: **personal use only, not sold**, for now. Sign up is closed (`LPG_SIGNUP=closed`), so only the admin account created on the first deploy can sign in.
 
 The Docker package in `deploy/` (docs/deployment-nvconsult.md) stays in the repository as a fallback. It is not needed for Vercel.
 
@@ -25,7 +26,7 @@ The template export (`packages/export/src/export.ts`) still uses Python. The web
 
 ## 2. Before you start: check these on the providers' own pages
 
-1. **Vercel plan.** As far as I know, the free Hobby plan is for personal, non-commercial use. Selling to sellers is commercial, so it likely needs Pro. Confirm in Vercel's terms.
+1. **Vercel plan.** As far as I know, the free Hobby plan is for personal, non-commercial use, which matches the decision of 2026-11-18 (personal use, not sold). Confirm in Vercel's terms, especially if the tool is used for a business that earns from the images. If it is ever sold to sellers, Pro is likely needed.
 2. **Upload size.** Vercel functions limit the size of one request body. I believe it is 4.5 MB. Each exported image is sent to the server as one PNG. Renders measured here were 1.1 to 1.7 MB, but a photo-heavy design may be larger. If a seller hits the limit, the studio says so plainly and exports nothing. The fix then is a direct upload to Blob (not built).
 3. **Private Blob objects.** The app stores every object as private, a feature of `@vercel/blob` 2.8.2. If the first admin upload fails with an access error, check in Vercel that the Blob store allows private objects.
 
@@ -64,6 +65,7 @@ Previews and production share this store unless you create a second one for Prev
 | `NEXT_PUBLIC_APP_URL` | `https://mockups.nvconsult.eu` | Production |
 | `LPG_SEED_ADMIN_EMAIL` | the first admin's email | Production, first deploy only |
 | `LPG_SEED_ADMIN_PASSWORD` | at least 10 characters, long and random | Production, first deploy only |
+| `LPG_SIGNUP` | `closed` (personal use: no new accounts) | Production, Preview |
 | `LPG_TRUSTED_PROXY_HOPS` | `1` (the default) | optional |
 
 - **Seed admin.** The first production build creates that admin once, only if no admin exists. Sign in, then delete both values from Vercel. They are not needed again.
@@ -103,12 +105,16 @@ Not tested:
 - Vercel's request size limit and its `X-Forwarded-For` handling.
 - Firefox, Safari, phones, a real GPU.
 
-## 6. Before opening to sellers
+## 6. Only if it is ever opened to sellers
 
-Unchanged by the move to Vercel:
+Not needed for personal use (decided 2026-11-18). Needed before anyone else signs up:
 
+- **Open sign up.** Remove `LPG_SIGNUP=closed`.
 - **Billing is a stub.** Every seller is on the free plan.
 - **No password reset or email.**
 - **No privacy policy or terms pages.** The wording needs a legal check.
 - **Product files.** The builder stores file names and metadata only.
-- **Saeed's decisions.** The decisions in pull request saeedr123/listing-photos-generator#1 still stand.
+
+Whatever the use: the decisions in pull request saeedr123/listing-photos-generator#1 still stand.
+
+**Your admin password.** With sign up closed and no password reset, the admin account is the only way in. Keep its password in a password manager. If it is lost, setting the two `LPG_SEED_ADMIN_*` values again does not help, because an admin already exists. Recovery then needs a direct change in the database.
