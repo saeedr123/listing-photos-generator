@@ -13,7 +13,7 @@ Status: Phase 2 foundation built 2026-11-07 (local files only, no GitHub push by
 
 ## How to run
 
-Requirements: Node 20 or newer, npm 10 or newer. No local Postgres is assumed. Use a hosted Postgres service or a containerized Postgres for development.
+Requirements: Node 20 or newer, npm 10 or newer, and Node 22.18 or newer for `npm run db:setup` (it loads TypeScript files directly). No local Postgres is assumed. Use a hosted Postgres service or a containerized Postgres for development.
 
 ```bash
 npm install
@@ -38,9 +38,18 @@ npm run prisma:format    # format prisma/schema.prisma
 
 ## How to deploy
 
-No hosting provider is chosen yet. No domain is chosen yet. The tools site domain is on hold. Do not check domain availability and do not buy anything until Ali reopens it.
+Decided 2026-11-18: **Vercel** at **mockups.nvconsult.eu**, with Neon PostgreSQL and Vercel Blob. Root Directory `apps/web`; the build (`scripts/vercel-build.mjs`) generates the Prisma client, runs migrations for production, creates the first admin and builds the app. Full steps, settings and checks: `docs/deployment-vercel.md`. Not yet deployed: nothing has been created on Vercel.
 
-Placeholder deployment shape, to be confirmed by Ali:
+Fallback, your own server with Docker: `docs/deployment-nvconsult.md` and `deploy/`. That image has not been built yet.
+
+Database setup without Docker, against any PostgreSQL:
+
+```bash
+npm run db:migrate   # apply prisma/migrations
+npm run db:setup     # first admin from LPG_SEED_ADMIN_*, then the Etsy reference data
+```
+
+Earlier placeholder deployment shape, kept for the record:
 
 1. Deploy `apps/web` (Next.js) to a hosting provider of Ali's choice.
 2. Provision a hosted PostgreSQL database and set `DATABASE_URL` as a secret, never in the repository.

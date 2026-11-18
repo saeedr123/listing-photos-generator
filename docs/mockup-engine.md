@@ -186,7 +186,7 @@ Storage: records and uploaded files go through the object storage interface in `
 ### Export
 
 1. The browser renders each shot offscreen at 2 times the output size on each side, then reduces it onto the kit background and draws the kit text. Result: a lossless PNG.
-2. The PNG goes to `POST /api/studio/gate`, which runs the rendered image gate in `packages/export` (size from the pack, sRGB, no colour change, no stretch, no unapproved crop, no upscaled design, no transparency), then encodes the JPG with the sRGB ICC profile embedded, then reads the profile back from the JPG bytes.
+2. The PNG goes to `POST /api/studio/gate`, which runs the rendered image gate in `packages/export` (size from the pack, sRGB, no colour change, no stretch, no unapproved crop, no upscaled design, no transparency), then encodes the JPG with the sRGB ICC profile embedded, then reads the profile back from the JPG bytes. Since 2026-11-18 the encoding runs in Node with `sharp` (4:4:4 chroma, no colour transform), so it works on Vercel without Python. The profile is inserted by `srgb-icc.ts`, a byte for byte port of `srgb_icc.py`. On a real 3000 by 2000 render the pixels matched the earlier Pillow encoder exactly.
 3. The browser packs the JPGs in listing order with a `manifest.json` into a zip.
 
 Nothing is published automatically.
@@ -228,13 +228,13 @@ That script is not part of `npm test` or CI. It needs a running web app and a br
 - Only the reference browser was used: headless Chromium with a software GPU. Not checked on a real GPU, in Firefox or Safari, or on a phone. Not checked by a person using a mouse.
 - HDRI files: the lighting preset type and the loader path exist, but no HDRI asset exists, so that path has never run.
 - Font files: the kit can name a font file with a licence record, and the loader exists, but no font file exists, so that path has never run.
-- Preview thumbnails: the record field and the upload kind exist. The admin screen does not set a thumbnail.
-- The premium label cannot be set from the admin screen. There is no sign-off form yet. The rule itself is enforced in validation.
+- Preview thumbnails: added 2026-11-18. The admin screen captures a thumbnail from the live preview and stores it. Checked in headless Chromium only.
+- Premium label: added 2026-11-18, a human review form in `/admin/models`. The admin ticks each premium criterion, records approved or rejected with a note, and the reviewer is taken from the signed-in admin, never typed. The label is accepted only with every criterion true and an approved review. No model has been reviewed or labelled premium: that needs a person looking at real renders.
 - Duplicate and roll back of a model were tested through the registry service, not by clicking the admin buttons.
 - Design input is images only (PNG, JPG, WebP), one per page. PDF pages are not rasterised in the studio.
-- Sellers cannot edit the text. Headline, bullets and badge come from the style kit, which is admin edited.
+- Seller text: added 2026-11-18. With a pack open (`/studio?pack=`), the seller writes the headline, bullets and badge, saved with the pack. Seller text replaces the kit text on the images. Before export it is checked against the product facts: a stated tab count, price or format that contradicts the facts blocks the export, and so does sample content. Without a pack, the kit text is used, as before.
 - Category `desk` has no prop models. Category `bundle` has no single file model: laptop plus phone is a shot with two models.
-- Not wired to listing packs, the reconciliation check, entitlements, export history, or rate limits. `/studio` and `POST /api/studio/gate` are open to any visitor, like the existing builder demo. Gate and rate limit them before any deployment.
+- Wired 2026-11-18: `/studio` and its API routes need a signed-in account. The gate, the catalog and admin uploads are rate limited (`config/rate-limits.json`). Premium models are hidden from accounts without premium access (no model is premium today). A studio export is recorded in the pack's export history with its check. Rate limits are counted in one process's memory only.
 - The export gate trusts the placement numbers the browser reports. It checks the real PNG size and transparency itself.
 - No server side or queued render runner. Only the browser runner exists.
-- No production object storage adapter.
+- Production object storage: the `vercel_blob` adapter, added 2026-11-18 for Vercel. Tested through a fake of the Blob calls only, not against a real Blob store.

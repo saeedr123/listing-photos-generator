@@ -37,3 +37,4 @@ export type { DisplayedValues } from "./reconciliation.ts";
 export { SAMPLE_MARKER, clearSampleContent, containsSampleMarker, sampleCopy, sampleFacts } from "./sample-content.ts";
 export { adminAccessRequiresReason, canAdminAccessPack, canDeletePack, canEditPack, canViewPack } from "./access-control.ts";
 export type { PackActor, PackOwner } from "./access-control.ts";
+export { displayedValuesFromText } from "./reconciliation.ts";

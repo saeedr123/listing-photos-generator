@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "note": "Per account limits for actions that cost server work or could be abused. Each rule allows maxAttempts within windowSeconds. Change the numbers here, not in code. Sign in, sign up and password change limits live in packages/auth/src/config.ts.",
+  "rules": {
+    "studio.gate": { "maxAttempts": 200, "windowSeconds": 3600, "scope": "account", "note": "One call per exported image. A 10 image set uses 10." },
+    "studio.catalog": { "maxAttempts": 300, "windowSeconds": 3600, "scope": "account" },
+    "admin.upload": { "maxAttempts": 60, "windowSeconds": 3600, "scope": "account" },
+    "packs.create": { "maxAttempts": 30, "windowSeconds": 3600, "scope": "account" },
+    "packs.export": { "maxAttempts": 60, "windowSeconds": 3600, "scope": "account" },
+    "share.create": { "maxAttempts": 30, "windowSeconds": 3600, "scope": "account" },
+    "share.comment": { "maxAttempts": 20, "windowSeconds": 3600, "scope": "address" }
+  }
+}

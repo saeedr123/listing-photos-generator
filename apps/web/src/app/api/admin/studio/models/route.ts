@@ -7,6 +7,7 @@ import {
   RegistryValidationError,
   inspectGlb,
   validateModelAddFlow,
+  type HumanReviewInput,
   type ModelRegistryEntry,
   type StudioIssue,
 } from "@listing-photos-generator/mockup-engine/studio-server";
@@ -36,7 +37,8 @@ export async function GET(): Promise<Response> {
 }
 
 interface ModelAction {
-  action: "create" | "edit" | "duplicate" | "hide" | "publish" | "rollback" | "check";
+  action: "create" | "edit" | "duplicate" | "hide" | "publish" | "rollback" | "check" | "review";
+  review?: HumanReviewInput;
   id?: string;
   entry?: ModelRegistryEntry;
   changes?: Partial<ModelRegistryEntry>;
@@ -95,6 +97,10 @@ export async function POST(request: Request): Promise<Response> {
       case "rollback":
         if (!body.id || typeof body.toVersion !== "number") return jsonError("Send the model id and the version to go back to.", 400);
         model = await registry.rollbackModel(body.id, body.toVersion, body.changeNote ?? "", context);
+        break;
+      case "review":
+        if (!body.id || !body.review) return jsonError("Send the model id and the review.", 400);
+        model = await registry.recordHumanReview(body.id, body.review, context);
         break;
       default:
         return jsonError("Unknown action.", 400);

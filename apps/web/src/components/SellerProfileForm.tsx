@@ -7,31 +7,37 @@
 import { useState } from "react";
 import { sellerProfileFields } from "@listing-photos-generator/builder/browser";
 import { siteCopy } from "../config/site-copy";
-import { getDemoProfile, saveDemoProfile } from "../lib/demo-store";
+import { saveProfileAction } from "../app/seller/actions";
 import { Alert, Button, Card, Field, inputStyle } from "./ui";
 
 const copy = siteCopy.profile;
 
-export function SellerProfileForm(props: { userId: string }) {
-  const existing = getDemoProfile(props.userId);
-  const [values, setValues] = useState<Record<string, string>>(existing?.values ?? {});
+export function SellerProfileForm(props: { initialValues: Record<string, string> }) {
+  const [values, setValues] = useState<Record<string, string>>(props.initialValues);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function setValue(key: string, value: string) {
     setValues((prev) => ({ ...prev, [key]: value }));
     setSaved(false);
   }
 
-  function submit(event: React.FormEvent) {
+  async function submit(event: React.FormEvent) {
     event.preventDefault();
-    saveDemoProfile(props.userId, values);
+    setError(null);
+    const result = await saveProfileAction(values);
+    if (!result.ok) {
+      setError(result.message);
+      return;
+    }
+    setValues(result.value.values);
     setSaved(true);
   }
 
   return (
     <Card title={copy.heading}>
       <p>{copy.help}</p>
-      <form onSubmit={submit}>
+      <form onSubmit={(event) => void submit(event)}>
         {sellerProfileFields.map((field) => (
           <Field key={field.key} label={field.label} help={field.helpText}>
             {field.type === "textarea" ? (
@@ -57,6 +63,7 @@ export function SellerProfileForm(props: { userId: string }) {
           </Field>
         ))}
         {saved ? <Alert tone="success">{copy.saved}</Alert> : null}
+        {error ? <Alert tone="danger">{error}</Alert> : null}
         <Button type="submit">{copy.saveButton}</Button>
       </form>
     </Card>

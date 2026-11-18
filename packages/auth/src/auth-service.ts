@@ -235,4 +235,26 @@ export class AuthService {
     );
     return { ok: true };
   }
+
+  // Deletes the account at the seller's request: marks the user deleted
+  // and revokes every session. The caller removes the seller data
+  // (packs, uploads, exports) and writes the completion record.
+  async deleteAccount(userId: string): Promise<boolean> {
+    const deleted = await this.provider.softDeleteUser(userId);
+    if (!deleted) {
+      return false;
+    }
+    await this.provider.revokeAllSessions(userId);
+    await this.audit.append(
+      newAuditEvent({
+        actorId: userId,
+        actorRole: null,
+        action: "account.deletion_completed",
+        targetType: "user",
+        targetId: userId,
+        detail: {},
+      }),
+    );
+    return true;
+  }
 }

@@ -4,6 +4,7 @@
 // provider and pretends to be the named one.
 
 import { LocalFileObjectStorage } from "./local-file.ts";
+import { VERCEL_BLOB_PROVIDER, VercelBlobObjectStorage } from "./vercel-blob.ts";
 import { StorageNotConfiguredError, type ObjectStorage } from "./types.ts";
 
 export interface ObjectStorageConfig {
@@ -11,6 +12,8 @@ export interface ObjectStorageConfig {
   localDir: string | null;
   bucket: string | null;
   region: string | null;
+  /** Vercel Blob read-write token, from BLOB_READ_WRITE_TOKEN. Never logged. */
+  blobToken: string | null;
 }
 
 export type ObjectStorageFactory = (config: ObjectStorageConfig) => ObjectStorage;
@@ -37,11 +40,14 @@ registerObjectStorageProvider(LOCAL_FILE_PROVIDER, (config) => {
   return new LocalFileObjectStorage(config.localDir);
 });
 
+registerObjectStorageProvider(VERCEL_BLOB_PROVIDER, (config) => new VercelBlobObjectStorage({ token: config.blobToken ?? "" }));
+
 export interface StorageEnv {
   OBJECT_STORAGE_PROVIDER?: string;
   OBJECT_STORAGE_LOCAL_DIR?: string;
   OBJECT_STORAGE_BUCKET?: string;
   OBJECT_STORAGE_REGION?: string;
+  BLOB_READ_WRITE_TOKEN?: string;
   NODE_ENV?: string;
 }
 
@@ -64,6 +70,7 @@ export function resolveObjectStorageConfig(env: StorageEnv, defaultLocalDir: str
     localDir: (env.OBJECT_STORAGE_LOCAL_DIR ?? "").trim() || defaultLocalDir,
     bucket: (env.OBJECT_STORAGE_BUCKET ?? "").trim() || null,
     region: (env.OBJECT_STORAGE_REGION ?? "").trim() || null,
+    blobToken: (env.BLOB_READ_WRITE_TOKEN ?? "").trim() || null,
   };
 }
 

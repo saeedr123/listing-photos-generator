@@ -1,0 +1,12 @@
+.git
+node_modules
+**/node_modules
+apps/web/.next
+.local-storage
+tests/visual/output
+tests/proof-output
+**/__pycache__
+.env
+.env.*
+!.env.example
+deploy/.env

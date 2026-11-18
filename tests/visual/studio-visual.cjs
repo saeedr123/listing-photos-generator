@@ -5,8 +5,9 @@
 // with WebGL. Run it by hand, in the reference browser named in
 // config/studio.json, before a release:
 //
-//   1. Start the web app (the storage directory is a throwaway one):
-//        OBJECT_STORAGE_LOCAL_DIR="$(mktemp -d)" \
+//   1. Start the web app on a THROWAWAY database (this script signs up
+//      test accounts) and a throwaway storage directory:
+//        DATABASE_URL=... OBJECT_STORAGE_LOCAL_DIR="$(mktemp -d)" \
 //        LPG_SEED_ADMIN_EMAIL=admin@example.test LPG_SEED_ADMIN_PASSWORD='choose-a-test-password' \
 //        npm run dev -w apps/web -- -p 3100
 //   2. Compare every shot with its stored reference render:
@@ -15,6 +16,10 @@
 //        node tests/visual/studio-visual.cjs --update
 //      Also run the export and admin flows in the browser:
 //        node tests/visual/studio-visual.cjs --e2e
+//
+// Use localhost, not 127.0.0.1, against a production build: the session
+// cookie is Secure there, and the test API client sends it over plain
+// http to localhost only.
 //
 // Options: --base-url=http://localhost:3100  --shots=hero,phone-view
 //          --admin-email=...  --admin-password=...  (for --e2e)
@@ -54,8 +59,22 @@ function record(name, ok, detail) {
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? `  ${detail}` : ""}`);
 }
 
+// The studio needs a signed in seller. Each run signs up a fresh test
+// account, with its own X-Forwarded-For address so the per address sign
+// up limit does not trip across runs. Use a throwaway database.
+async function signedInSeller(browser) {
+  const forwarded = "10.7." + Math.floor(Math.random() * 250) + "." + Math.floor(Math.random() * 250);
+  const context = await browser.newContext({ viewport: { width: 1400, height: 1000 }, extraHTTPHeaders: { "x-forwarded-for": forwarded } });
+  const page = await context.newPage();
+  await page.goto(`${BASE_URL}/auth/register?next=%2Fdashboard`, { waitUntil: "networkidle", timeout: 180000 });
+  await page.fill('input[type="email"]', `studio-visual-${Date.now()}@example.test`);
+  await page.fill('input[type="password"]', "Studio-Visual-Pass-2026");
+  await Promise.all([page.waitForURL((url) => url.pathname === "/dashboard", { timeout: 60000 }), page.click('button[type="submit"]')]);
+  return page;
+}
+
 async function openStudio(browser) {
-  const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
+  const page = await signedInSeller(browser);
   page.on("pageerror", (error) => console.log(`page error: ${error.message}`));
   await page.goto(`${BASE_URL}/studio?harness=1`, { waitUntil: "networkidle", timeout: 180000 });
   await page.waitForSelector('[data-testid="design-input"]', { timeout: 180000 });
@@ -157,6 +176,14 @@ async function adminFlow(browser) {
 
   const anonymous = await page.request.get(`${BASE_URL}/api/admin/studio/models`);
   record("the admin API refuses a signed out caller", anonymous.status() === 401);
+  for (const path of ["/api/studio/catalog", "/api/studio/asset?key=builtin/models/laptop-generic.glb"]) {
+    const response = await page.request.get(`${BASE_URL}${path}`);
+    record(`${path.split("?")[0]} refuses a signed out caller`, response.status() === 401, `status ${response.status()}`);
+  }
+  const gate = await page.request.post(`${BASE_URL}/api/studio/gate`, { multipart: { meta: "{}" } });
+  record("/api/studio/gate refuses a signed out caller", gate.status() === 401, `status ${gate.status()}`);
+  await page.goto(`${BASE_URL}/studio`, { waitUntil: "networkidle", timeout: 180000 });
+  record("the studio page asks a visitor to sign in", /to use the studio/.test(await page.locator("main").innerText()));
 
   await page.goto(`${BASE_URL}/auth/login?next=%2Fadmin%2Fmodels`, { waitUntil: "networkidle", timeout: 180000 });
   await page.fill('input[type="email"]', email);
@@ -210,8 +237,37 @@ async function adminFlow(browser) {
   const status = await page.locator(`[data-model-id="${id}"] [data-testid="row-status"]`).innerText();
   record("the model is enabled through admin, with no code change", status === "published", `status ${status}`);
 
-  const catalog = await (await page.request.get(`${BASE_URL}/api/studio/catalog`)).json();
-  const inCatalog = catalog.catalog.models.find((m) => m.id === id);
+  // Thumbnail from the preview, saved with the model.
+  await page.click('[data-testid="capture-thumbnail"]');
+  await page.waitForFunction(() => /Thumbnail captured/.test(document.querySelector('[data-testid="admin-message"]')?.textContent || ""), null, { timeout: 120000 });
+  await page.fill('[data-testid="change-note"]', "Thumbnail added by the browser test.");
+  await page.click('[data-testid="save-model"]');
+  await page.waitForFunction(() => /Saved as a new version/.test(document.querySelector('[data-testid="admin-message"]')?.textContent || ""), null, { timeout: 60000 });
+  await page.waitForSelector(`[data-model-id="${id}"] [data-testid="row-thumbnail"]`, { timeout: 60000 });
+  const thumbOk = await page.evaluate((modelId) => { const img = document.querySelector(`[data-model-id="${modelId}"] [data-testid="row-thumbnail"]`); return Boolean(img && img.complete && img.naturalWidth === 600 && img.naturalHeight === 400); }, id);
+  record("a preview thumbnail is captured, stored and shown", thumbOk);
+  // Saving a published model makes a preview version; enable it again.
+  await page.fill('[data-testid="change-note"]', "Enabled again after the thumbnail.");
+  await page.click('[data-testid="enable-model"]');
+  await page.waitForFunction(() => /Enabled\. The model can now be used/.test(document.querySelector('[data-testid="admin-message"]')?.textContent || ""), null, { timeout: 60000 });
+
+  // Human review: not every criterion met keeps the model basic.
+  for (const key of ["realisticPerspective", "softRealisticShadows", "screenCrispAtExportSize"]) await page.check(`[data-testid="criterion-${key}"]`);
+  await page.fill('[data-testid="review-approver"]', "Test owner");
+  await page.fill('[data-testid="review-note"]', "Browser test review. Not a real review.");
+  await page.click('[data-testid="record-review"]');
+  await page.waitForFunction(() => /Review recorded/.test(document.querySelector('[data-testid="admin-message"]')?.textContent || ""), null, { timeout: 60000 });
+  record("a review with criteria not met keeps the model basic", (await page.locator('[data-testid="quality-label"]').innerText()) === "basic");
+  // Every criterion met and approved: premium.
+  for (const key of ["depth", "lifestyleOrDeskScene", "realisticMaterialsAndEdges"]) await page.check(`[data-testid="criterion-${key}"]`);
+  await page.click('[data-testid="record-review"]');
+  await page.waitForFunction(() => document.querySelector('[data-testid="quality-label"]')?.textContent === "premium", null, { timeout: 60000 });
+  record("an approved review with every criterion met labels the model premium", true);
+
+  const catalogResponse = await page.request.get(`${BASE_URL}/api/studio/catalog`);
+  const catalog = await catalogResponse.json().catch(() => ({}));
+  if (!catalog.catalog) record("the studio catalog answers after the review", false, `status ${catalogResponse.status()}: ${JSON.stringify(catalog).slice(0, 300)}`);
+  const inCatalog = catalog.catalog ? catalog.catalog.models.find((m) => m.id === id) : undefined;
   record("the new model is in the studio catalog, ready for shots and batch export", Boolean(inCatalog) && inCatalog.status === "published" && inCatalog.modelFile.storageKey.startsWith("models/"), inCatalog ? inCatalog.modelFile.storageKey : "missing");
   const file = await page.request.get(`${BASE_URL}/api/studio/asset?key=${encodeURIComponent(inCatalog ? inCatalog.modelFile.storageKey : "models/none.glb")}`);
   record("the uploaded GLB is served from object storage", file.status() === 200 && (await file.body()).length === 146520);

@@ -1,5 +1,7 @@
 # Deployment preparation, Listing Photos Generator
 
+Update, 2026-11-18: hosting is decided as Vercel at mockups.nvconsult.eu, with Neon and Vercel Blob. Read `docs/deployment-vercel.md` first. The container stack in `deploy/` (`docs/deployment-nvconsult.md`) is the fallback. The placeholder text below is kept as the earlier record.
+
 Status: Phase 2 complete, verified by coordinator 2026-11-07,
 rechecked 2026-11-10. Local files only, no GitHub push. Nothing here
 is deployed. No hosting provider is chosen, no spending, no live

@@ -18,3 +18,7 @@ __pycache__/
 
 # Visual regression candidates and export checks (tests/visual/studio-visual.cjs)
 tests/visual/output/
+
+# Production deployment secrets and backups (deploy/)
+deploy/.env
+backups/

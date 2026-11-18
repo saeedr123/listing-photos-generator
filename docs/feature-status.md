@@ -136,6 +136,66 @@ Still open after the gap fill:
 - Proof pack gaps: image 04 blank tablet screen, no portrait mobile-view or square who-it-is-for proof, 6 templates left out, no frame premium until Saeed approves it in plain words.
 - Saeed-only decisions: price, currency, Stripe account, VAT treatment with accountant confirmation, refund policy final wording with a legal check, AI provider choice and budget cap, AI credit counts, hosting and database and storage providers, domain on hold, mockup frame licences, reconciliation fix vs flag, trial shape, mockup pricing, which niche pack converts first.
 
+## 2026-11-18, later: ready for Vercel at mockups.nvconsult.eu, not deployed
+
+Same branch and pull request as the entry below (saeedr123/listing-photos-generator#2, stacked on #1). Not merged, not deployed. Nothing was created on Vercel, Neon or Hostinger, and nothing was bought.
+
+Owner decisions, 2026-11-18: the address is mockups.nvconsult.eu; host on Vercel (as the CV tool), with Neon PostgreSQL through Vercel and Vercel Blob for files. This replaces the separate server route in the entry below. deploy/ stays as a fallback.
+
+Verification by the engineering session, at the head of the branch: 375 tests pass, 0 fail (root vitest 49, tests/run-tests.sh 201, auth 13, builder 17, admin 7, ai 39, billing 34, billing-provider 9, database integration 6 against PostgreSQL 16). Typecheck, lint and Prisma validate pass. No em dashes or en dashes. CI passed on the pull request at commits 01dae14 and ba67eba.
+
+The Vercel build was checked as closely as possible without Vercel: scripts/vercel-build.mjs ran from apps/web with VERCEL_ENV=production against a fresh PostgreSQL, with separate pooled and direct URLs. It applied 6 migrations, created the admin once, loaded the reference data and built. The standalone output (the same file tracing Vercel uses) was copied away from the repository and run on its own. Against it, in headless Chromium: health 200, seller flow 18 of 18, pack to studio 8 of 8, studio and admin 68 of 68. All 10 shots matched their references (0.000 percent of pixels differ), and the 10 exported JPGs (3000 by 2000) carried the sRGB profile, now written by the Node encoder. A first studio run failed only because it used 127.0.0.1: the production session cookie is Secure, and the test's API client sends it over plain http to localhost only. The test now says so and reports such a failure instead of crashing.
+
+Built and tested:
+- Studio JPG encoder in Node with sharp 0.33.5, no Python. The sRGB profile bytes equal the Python ones (test). On a real 3000 by 2000 render the pixels matched the Pillow encoder exactly (max difference 0).
+- Vercel Blob storage adapter (vercel_blob, @vercel/blob 2.8.2), every object private. Tested through a fake of the Blob calls, with the library's real not-found error. Not tested against a real Blob store.
+- Rate limits in PostgreSQL (RateLimitHit, migration 0006), shared by every app copy, including sign in and sign up. With a per-key lock, 20 simultaneous requests on a limit of 5 let exactly 5 through. That test first found a real bug (Prisma cannot read the void result of the lock function), now fixed.
+- One repository root helper instead of five working folder guesses. Next.js file tracing includes every file the server reads at run time.
+- pgbouncer=true added for a Neon pooled host. Prisma also generates the engine for the Vercel runtime.
+- A plain message when the host refuses an upload as too large.
+- Guide: docs/deployment-vercel.md (project settings, Neon, Blob, environment variables, the DNS record in hPanel, first deploy checks).
+
+Not verified:
+- No real Vercel deployment, Neon database, pooler or Blob store. There are no accounts or tokens here.
+- Vercel's request size limit (believed to be 4.5 MB). Renders measured 1.1 to 1.7 MB.
+- Vercel's X-Forwarded-For handling.
+- Whether the Hobby plan allows this commercial use. The owner should check Vercel's terms.
+- Unchanged from below: billing is a stub, there is no password reset, email, privacy policy or terms page, and Saeed's decisions on #1 still stand.
+
+Steps for the owner: merge #1 then #2, then follow docs/deployment-vercel.md section 3.
+
+Use decided by the owner, 2026-11-18: personal use for now, not sold. Added `LPG_SIGNUP=closed`, which refuses new accounts on the server and shows "Sign up is closed" on the sign up page. Checked on a production build: closed shows the message, unset shows the form. The server side refusal in the register action was reviewed, not exercised in a browser, because the closed page has no form. So billing, email, password reset and legal pages are not blockers for this use. Keep the admin password safe: there is no reset.
+
+## ready to use on a server, stacked on the studio pull request, not merged, not deployed
+
+Work on branch claude/listing-photos-generator-go-live, in draft pull request saeedr123/listing-photos-generator#2, stacked on pull request saeedr123/listing-photos-generator#1 (its base is the studio branch, not main). Merge #1 first. Not merged, not deployed. No server bought, no domain or subdomain created, no spending, no contact with real people.
+
+Owner answers, 2026-11-18: use it themselves first and then open it to sellers ("both"), start the unblocked work ("yes"), designs are image files ("images"), and "we can host for now on our own site nvconsult.eu".
+
+Verification by the engineering session, 2026-11-18, at the head of the branch: 366 tests pass, 0 fail (root vitest 48, tests/run-tests.sh 194, auth 13, builder 17, admin 7, ai 39, billing 34, billing-provider 9, and 5 database integration tests against a real PostgreSQL 16). Typecheck passes, lint passes, Next production build passes. No em dashes or en dashes (the CI scan). Browser checks on the production build against a fresh PostgreSQL 16, headless Chromium with a software GPU: seller flow 18 of 18, pack to studio flow 8 of 8, studio and admin 68 of 68 (all 10 shots match their stored reference renders, 0.000 percent of pixels differ). The CI workflow now starts a PostgreSQL service and runs the database integration tests.
+
+Built and tested:
+- Real database path. Migrations 0001 to 0005 applied to PostgreSQL 16. Three bugs found that the test doubles had hidden, all fixed: a required copy prompt column the builder never fills, an export pointing at a reconciliation check that was never stored, and a template slug written into a UUID column. The Prisma client was never loaded inside the Next build; fixed. Reference data (the Etsy platform and pack) is loaded once by npm run db:setup, which also creates the first admin from LPG_SEED_ADMIN_* when none exists.
+- Seller accounts on the server: sign up, sign in, password change, account deletion and the seller's own audit log, with the HttpOnly session cookie. The browser demo store is deleted. Packs, versions and rollback, the export check, review links with comments, the dashboard, profile and settings now all run through server actions with ownership checks.
+- Production refuses to start on the in-memory development store unless LPG_ALLOW_MEMORY_STORE=true is set on purpose.
+- /studio and its API need a signed-in account. Sign up is limited by the auth module (5 per hour per address). Rate limits from config/rate-limits.json on pack creation, export, review links, comments, the studio gate, the catalog and admin uploads. The visitor address comes from X-Forwarded-For, counted LPG_TRUSTED_PROXY_HOPS places from the right.
+- Studio connected to listing packs: open a pack in the studio, write the headline, bullets and badge, check them against the product facts before export, and record the export in the pack's history. The free plan limit (1 pack) and the basic-only mockup rule come from config/plans.json. Admins are not limited.
+- Admin: human review form for the premium label (each criterion, approved or rejected, a note, reviewer taken from the signed-in admin) and preview thumbnails captured from the live preview.
+- Deployment package: Dockerfile, deploy/ (compose stack with the app, PostgreSQL 16 and Caddy; start script; env example; backup script), GET /api/health. Hosting finding and steps in docs/deployment-nvconsult.md. The start script was run twice against a fresh PostgreSQL: migrations once, admin once, health 200 both times.
+
+Not built, not verified, or waiting, in plain words:
+- The Docker image was never built and the compose stack never started: this environment has no Docker. Caddy HTTPS and the backup restore are untested.
+- nvconsult.eu itself (WordPress on Hostinger web hosting) cannot run the app. It needs a separate server reached through a subdomain. The subdomain name and the server are not chosen.
+- Billing is still a stub: every seller is on the free plan. No password reset and no email. No privacy policy or terms pages. Product files in the builder are stored as metadata only, not uploaded.
+- Rate limits are counted in one process's memory: one app container only.
+- Everything from the 2026-11-17 entry below that is not listed as built here still stands: no human visual review, no real product render, one browser only, rendering in the browser, the decisions waiting on Saeed.
+
+Decisions waiting on the owner for this work:
+1. The subdomain name on nvconsult.eu.
+2. The server: any Linux VPS that runs Docker, Hostinger's own VPS included. No price is given here.
+3. Where nvconsult.eu links to the app.
+4. Before opening to sellers: billing, an email provider for password reset, privacy policy and terms wording.
+
 ## 3D mockup studio, 2026-11-17, provisional
 
 3D mockup studio built on branch claude/listing-photos-generator-mockup-cj66s8, in pull request saeedr123/listing-photos-generator#1, marked ready for review on 2026-11-17, not merged. Do not merge until Saeed answers the decisions listed below. No spending, no live site, no contact with real people, no licence bought. The 14 November direction change it follows is PROVISIONAL until Saeed approves it (PROMPT.md section 7.6, docs/architecture.md section 6.7).

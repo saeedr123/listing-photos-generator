@@ -8,6 +8,7 @@ export interface StoredObjectInfo {
   key: string;
   bytes: number;
   contentType: string;
+  /** Hex SHA-256 of the content, or "" when the provider cannot report it without reading the object (Vercel Blob head and list). */
   sha256: string;
   updatedAt: string;
 }

@@ -6,17 +6,12 @@
 // sRGB ICC profile embedded and proves the profile from the file bytes.
 // Every platform value is read from the pack passed in.
 
-import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import sharp from "sharp";
 import type { PlatformPack } from "../../template-engine/src/platform-adapter.ts";
 import { ExportError, qualityGateBlockedError, rasterizerError } from "./errors.ts";
 import { ICC_PROFILE_NAME, readIccProfile } from "./icc.ts";
+import { embedIccProfile, srgbIccProfileBytes } from "./srgb-icc.ts";
 import type { GateCheck, GateStatus, QualityGateResult } from "./quality-gate.ts";
-
-const HERE = dirname(fileURLToPath(import.meta.url));
 
 export interface RenderedSurfaceGateInput {
   surfaceId: string;
@@ -152,18 +147,60 @@ export interface GatedImage {
 }
 
 /**
+ * Encode a rendered PNG as the platform JPG, in Node with sharp. The
+ * pixels are not resized, cropped or recoloured: only the size is checked,
+ * transparency is refused, and the JPEG gets the same sRGB ICC profile as
+ * the template export (srgb-icc.ts, identical bytes to srgb_icc.py). The
+ * profile is inserted into the file directly, so sharp never runs a colour
+ * conversion on the pixels. Chroma is not subsampled (4:4:4), as before.
+ */
+async function encodeRenderedPng(
+  png: Uint8Array,
+  fileName: string,
+  quality: number,
+  width: number,
+  height: number,
+): Promise<Buffer> {
+  let image: sharp.Sharp;
+  let meta: sharp.Metadata;
+  try {
+    image = sharp(Buffer.from(png), { failOn: "error" });
+    meta = await image.metadata();
+  } catch (error) {
+    throw rasterizerError(`The image could not be read: ${(error as Error).message}`);
+  }
+  if (meta.format !== "png") {
+    throw rasterizerError(`Expected a PNG from the renderer, got ${meta.format ?? "an unknown format"}.`);
+  }
+  if (meta.width !== width || meta.height !== height) {
+    throw qualityGateBlockedError([`${fileName}: Image is ${meta.width}x${meta.height}px, expected ${width}x${height}px.`]);
+  }
+  if (meta.hasAlpha) {
+    const stats = await image.stats();
+    const alpha = stats.channels[stats.channels.length - 1];
+    if (alpha && alpha.min < 255) {
+      throw qualityGateBlockedError([
+        `${fileName}: The image has transparent pixels. Transparent parts would turn black after upload.`,
+      ]);
+    }
+  }
+  const jpg = await image
+    .removeAlpha()
+    .toColourspace("srgb")
+    .jpeg({ quality, chromaSubsampling: "4:4:4", mozjpeg: false })
+    .toBuffer();
+  return embedIccProfile(jpg, srgbIccProfileBytes());
+}
+
+/**
  * Run the gate, then encode the platform JPG with the sRGB ICC profile
  * embedded, then read the profile back from the JPG bytes. Throws an
  * ExportError with a plain language message when anything blocks.
  */
-export function gateAndEncodeRenderedImage(
+export async function gateAndEncodeRenderedImage(
   input: RenderedImageGateInput,
   png: Uint8Array,
-  options: { scriptDir?: string } = {},
-): GatedImage {
-  // A bundler can move this module, which breaks the path derived from
-  // import.meta.url. A caller that bundles passes the folder explicitly.
-  const scriptDir = options.scriptDir ?? HERE;
+): Promise<GatedImage> {
   const { pack } = input;
   if (pack.export.format !== "jpg") {
     throw new ExportError(
@@ -176,42 +213,23 @@ export function gateAndEncodeRenderedImage(
   if (gate.blocked) {
     throw qualityGateBlockedError(gate.checks.filter((c) => c.status === "block").map((c) => c.reason));
   }
-  const work = mkdtempSync(join(tmpdir(), "lpg-gate-"));
-  try {
-    const inPath = join(work, "in.png");
-    const outPath = join(work, "out.jpg");
-    writeFileSync(inPath, png);
-    const encoded = spawnSync(
-      "python3",
-      [join(scriptDir, "encode_jpg.py"), inPath, outPath, String(pack.export.quality), String(input.widthPx), String(input.heightPx)],
-      { encoding: "utf8" },
-    );
-    if (encoded.status === 3 || encoded.status === 4) {
-      throw qualityGateBlockedError([`${input.fileName}: ${(encoded.stderr || "").trim()}`]);
-    }
-    if (encoded.status !== 0 || !existsSync(outPath)) {
-      throw rasterizerError(encoded.stderr || encoded.stdout || "the JPG encoder exited without writing a file.");
-    }
-    const bytes = readFileSync(outPath);
-    // Prove the profile from the bytes. A config flag is never trusted.
-    const icc = readIccProfile(bytes);
-    if (!icc.present) {
-      throw rasterizerError(`${input.fileName} has no valid sRGB ICC profile. ${icc.detail}`);
-    }
-    return {
-      fileName: input.fileName,
-      bytes: new Uint8Array(bytes),
-      widthPx: input.widthPx,
-      heightPx: input.heightPx,
-      shortestSidePx: Math.min(input.widthPx, input.heightPx),
-      format: pack.export.format,
-      colourProfile: pack.export.colourProfile,
-      iccProfile: ICC_PROFILE_NAME,
-      iccProfileEmbedded: true,
-      iccVerification: `${icc.detail} Read back from ${input.fileName} bytes.`,
-      gate,
-    };
-  } finally {
-    rmSync(work, { recursive: true, force: true });
+  const bytes = await encodeRenderedPng(png, input.fileName, pack.export.quality, input.widthPx, input.heightPx);
+  // Prove the profile from the bytes. A config flag is never trusted.
+  const icc = readIccProfile(bytes);
+  if (!icc.present) {
+    throw rasterizerError(`${input.fileName} has no valid sRGB ICC profile. ${icc.detail}`);
   }
+  return {
+    fileName: input.fileName,
+    bytes: new Uint8Array(bytes),
+    widthPx: input.widthPx,
+    heightPx: input.heightPx,
+    shortestSidePx: Math.min(input.widthPx, input.heightPx),
+    format: pack.export.format,
+    colourProfile: pack.export.colourProfile,
+    iccProfile: ICC_PROFILE_NAME,
+    iccProfileEmbedded: true,
+    iccVerification: `${icc.detail} Read back from ${input.fileName} bytes.`,
+    gate,
+  };
 }

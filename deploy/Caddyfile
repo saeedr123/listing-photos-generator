@@ -1,0 +1,6 @@
+# HTTPS in front of the app. Caddy gets and renews the certificate for
+# LPG_DOMAIN by itself, once the DNS record points at this server.
+{$LPG_DOMAIN} {
+	encode gzip
+	reverse_proxy app:3000
+}

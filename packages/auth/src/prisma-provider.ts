@@ -167,4 +167,9 @@ export class PrismaAuthProvider implements AuthProvider {
     await this.client.user.update({ where: { id: userId }, data: { role } });
     return true;
   }
+
+  async softDeleteUser(userId: string): Promise<boolean> {
+    await this.client.user.update({ where: { id: userId }, data: { deleted_at: new Date() } });
+    return true;
+  }
 }

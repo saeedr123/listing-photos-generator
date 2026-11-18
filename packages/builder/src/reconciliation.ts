@@ -205,6 +205,12 @@ export function reconcilePack(facts: ProductFacts, displayed: DisplayedValues, h
 // text; checklist entries are treated as the claims the pack shows.
 export function displayedValuesFromPack(pack: ListingPack): DisplayedValues {
   const copyText = pack.copy.title + "\n" + pack.copy.description + "\n" + pack.copy.tags.join(" ") + "\n" + pack.copy.checklist.join("\n");
+  return displayedValuesFromText(copyText, pack.copy.claimsShown);
+}
+
+// Read tab count, price and format from any text the seller shows: pack
+// copy, or the headline and bullets on a listing image.
+export function displayedValuesFromText(copyText: string, claims: string[]): DisplayedValues {
   const tabMatch = copyText.match(/(\d+)\s*tabs?/i);
   const priceMatch = copyText.match(/(USD|EUR|GBP)\s*(\d+(?:\.\d{1,2})?)/i);
   const lower = copyText.toLowerCase();
@@ -224,7 +230,7 @@ export function displayedValuesFromPack(pack: ListingPack): DisplayedValues {
     priceLaunchMinor: null,
     currency: priceMatch ? (priceMatch[1] as string).toUpperCase() : null,
     formatText,
-    claims: pack.copy.claimsShown.slice(),
+    claims: claims.slice(),
     copyText,
   };
 }

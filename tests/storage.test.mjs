@@ -20,7 +20,9 @@ import {
   registerObjectStorageProvider,
   registeredObjectStorageProviders,
   resolveObjectStorageConfig,
+  VercelBlobObjectStorage,
 } from "../packages/storage/src/index.ts";
+import { BlobNotFoundError } from "@vercel/blob";
 
 const bytes = (text) => new TextEncoder().encode(text);
 
@@ -149,5 +151,96 @@ describe("versioned documents", () => {
     const store = new VersionedDocStore({ storage: new InMemoryObjectStorage(), collection: "registry/docs" });
     await assert.rejects(() => store.saveNewVersion({ id: "../escape", version: 1 }), /not valid/);
     await assert.rejects(() => store.saveNewVersion({ id: "Has Spaces", version: 1 }), /not valid/);
+  });
+});
+
+// A fake of the @vercel/blob calls the adapter makes, with the real
+// library's behaviour: head throws BlobNotFoundError, get returns null on
+// a missing blob, list pages with a cursor. Records every option passed.
+function fakeBlobClient() {
+  const blobs = new Map();
+  const calls = [];
+  return {
+    calls,
+    blobs,
+    async put(pathname, body, options) {
+      calls.push(["put", pathname, options]);
+      blobs.set(pathname, { data: new Uint8Array(body), contentType: options.contentType, uploadedAt: new Date("2026-11-18T12:00:00Z"), access: options.access });
+      return { pathname };
+    },
+    async head(pathname, options) {
+      calls.push(["head", pathname, options]);
+      const b = blobs.get(pathname);
+      if (!b) throw new BlobNotFoundError();
+      return { pathname, size: b.data.byteLength, contentType: b.contentType, uploadedAt: b.uploadedAt };
+    },
+    async get(pathname, options) {
+      calls.push(["get", pathname, options]);
+      const b = blobs.get(pathname);
+      if (!b) return null;
+      const stream = new ReadableStream({ start(c) { c.enqueue(b.data.slice(0, 2)); c.enqueue(b.data.slice(2)); c.close(); } });
+      return { statusCode: 200, stream, blob: { pathname, size: b.data.byteLength, contentType: b.contentType, uploadedAt: b.uploadedAt } };
+    },
+    async del(pathname, options) {
+      calls.push(["del", pathname, options]);
+      blobs.delete(pathname);
+    },
+    async list(options) {
+      calls.push(["list", options.prefix, options]);
+      const all = [...blobs.keys()].filter((k) => k.startsWith(options.prefix)).sort().reverse();
+      const start = options.cursor ? Number(options.cursor) : 0;
+      const pageSize = 1; // force pagination in the test
+      const page = all.slice(start, start + pageSize);
+      const hasMore = start + pageSize < all.length;
+      return { blobs: page.map((k) => ({ pathname: k, size: blobs.get(k).data.byteLength, uploadedAt: blobs.get(k).uploadedAt })), cursor: hasMore ? String(start + pageSize) : undefined, hasMore };
+    },
+  };
+}
+
+describe("Vercel Blob adapter", () => {
+  it("passes the same interface contract, through a fake of the Blob calls", async () => {
+    const client = fakeBlobClient();
+    await exerciseStorage(new VercelBlobObjectStorage({ token: "test-token-not-real", client }));
+  });
+
+  it("stores every object private, with no random suffix, and sends the token", async () => {
+    const client = fakeBlobClient();
+    const storage = new VercelBlobObjectStorage({ token: "test-token-not-real", client });
+    await storage.put("registry/models/laptop/v1.json", bytes("{}"), { contentType: "application/json" });
+    const [, , options] = client.calls.find((c) => c[0] === "put");
+    assert.equal(options.access, "private");
+    assert.equal(options.addRandomSuffix, false);
+    assert.equal(options.allowOverwrite, true);
+    assert.equal(options.token, "test-token-not-real");
+    await storage.get("registry/models/laptop/v1.json");
+    assert.equal(client.calls.find((c) => c[0] === "get")[2].useCache, false);
+    assert.equal(await storage.signedReadUrl("registry/models/laptop/v1.json", 60), null);
+  });
+
+  it("is chosen by name from config and refuses to start without a token", () => {
+    const config = resolveObjectStorageConfig({ OBJECT_STORAGE_PROVIDER: "vercel_blob", NODE_ENV: "production" }, null);
+    assert.equal(config.blobToken, null);
+    assert.throws(() => createObjectStorage(config), StorageNotConfiguredError);
+    const ok = createObjectStorage(resolveObjectStorageConfig({ OBJECT_STORAGE_PROVIDER: "vercel_blob", BLOB_READ_WRITE_TOKEN: "test-token-not-real", NODE_ENV: "production" }, null));
+    assert.equal(ok.providerName, "vercel_blob");
+    assert.ok(registeredObjectStorageProviders().includes("vercel_blob"));
+  });
+
+  it("rejects unsafe keys before calling Blob", async () => {
+    const client = fakeBlobClient();
+    const storage = new VercelBlobObjectStorage({ token: "test-token-not-real", client });
+    await assert.rejects(() => storage.put("../escape", bytes("x"), { contentType: "text/plain" }), StorageKeyError);
+    assert.equal(client.calls.length, 0);
+  });
+
+  it("versioned documents work on top of it", async () => {
+    const storage = new VercelBlobObjectStorage({ token: "test-token-not-real", client: fakeBlobClient() });
+    const docs = new VersionedDocStore({ storage, collection: "registry/docs", seeds: [{ id: "seeded", version: 1, value: "from the repository" }] });
+    await docs.saveNewVersion({ id: "seeded", version: 2, value: "edited in admin" });
+    await docs.saveNewVersion({ id: "fresh", version: 1, value: "x" });
+    assert.equal((await docs.latest("seeded")).value, "edited in admin");
+    assert.deepEqual((await docs.history("seeded")).map((d) => d.version), [1, 2]);
+    assert.deepEqual(await docs.ids(), ["fresh", "seeded"]);
+    await assert.rejects(() => docs.saveNewVersion({ id: "seeded", version: 2, value: "again" }), VersionConflictError);
   });
 });

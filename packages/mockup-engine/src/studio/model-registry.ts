@@ -4,7 +4,7 @@
 // roll back are version operations, per PROMPT.md section 7.3. Pure: no
 // storage and no 3D library here.
 
-import type { Orientation } from "../types.ts";
+import type { HumanReviewSignOff, Orientation, PremiumCriteria } from "../types.ts";
 import { hasApprovedHumanReview } from "../premium.ts";
 import type { GlbInfo } from "./glb-inspect.ts";
 import {
@@ -329,4 +329,51 @@ export function rollbackModel(
 export function isUsableInShots(entry: ModelRegistryEntry, allowPreview = false): boolean {
   const statusOk = entry.status === "published" || (allowPreview && entry.status === "preview");
   return entry.renderer === "glb-3d" && statusOk && validateModelEntry(entry).length === 0;
+}
+
+// ---- Human visual review ------------------------------------------------------
+
+export interface HumanReviewInput {
+  /** The six premium criteria, as judged by the person looking at the renders. */
+  criteria: PremiumCriteria;
+  decision: "approved" | "rejected";
+  /** The owner who approves premium, by name. PROMPT.md 9.4: Saeed approves. */
+  approvedBy: string;
+  note: string;
+}
+
+/**
+ * Records a human visual review as a new version. The reviewer is the
+ * signed in admin (context.actor), never a name typed in the browser.
+ * The premium label is set only when the decision is approved AND every
+ * criterion is met. Anything else stores the review and keeps the model
+ * basic, so a review can never make a frame premium by itself.
+ */
+export function applyHumanReview(current: ModelRegistryEntry, input: HumanReviewInput, context: VersionContext): ModelRegistryEntry {
+  if (!input.approvedBy || !input.approvedBy.trim()) throw new Error("Name the person who approves the review.");
+  if (!input.note || !input.note.trim()) throw new Error("A review needs a note: what was looked at, at what size, and what was seen.");
+  const criteria: PremiumCriteria = {
+    realisticPerspective: Boolean(input.criteria.realisticPerspective),
+    softRealisticShadows: Boolean(input.criteria.softRealisticShadows),
+    depth: Boolean(input.criteria.depth),
+    lifestyleOrDeskScene: Boolean(input.criteria.lifestyleOrDeskScene),
+    realisticMaterialsAndEdges: Boolean(input.criteria.realisticMaterialsAndEdges),
+    screenCrispAtExportSize: Boolean(input.criteria.screenCrispAtExportSize),
+  };
+  const allMet = Object.values(criteria).every(Boolean);
+  const premium = input.decision === "approved" && allMet;
+  const humanReview: HumanReviewSignOff = {
+    reviewedBy: context.actor,
+    reviewedAt: context.now,
+    approvedBy: input.approvedBy.trim(),
+    approvedAt: context.now,
+    decision: input.decision,
+    note: input.note.trim(),
+  };
+  const outcome = premium
+    ? "labelled premium"
+    : input.decision === "approved"
+      ? "kept basic, because not every premium criterion is met"
+      : "kept basic, review rejected";
+  return editModel(current, { premiumCriteria: criteria, humanReview, qualityLabel: premium ? "premium" : "basic" }, `Human visual review by ${context.actor}, approved by ${humanReview.approvedBy}: ${outcome}. ${humanReview.note}`, context);
 }

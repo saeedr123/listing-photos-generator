@@ -6,6 +6,7 @@
 import { createHash } from "node:crypto";
 import { inspectGlb } from "@listing-photos-generator/mockup-engine/studio";
 import { requireAdminApi } from "@/lib/admin-api";
+import { checkRateLimit } from "@/lib/rate-limits";
 import { contentTypeForKey, getStudioServer, jsonError } from "@/lib/studio-server";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,8 @@ const KINDS: Record<string, { prefix: string; extensions: string[] }> = {
 export async function POST(request: Request): Promise<Response> {
   const admin = await requireAdminApi();
   if (!admin.ok) return admin.response;
+  const limit = await checkRateLimit("admin.upload", admin.actor);
+  if (!limit.allowed) return jsonError(limit.message, 429);
   let studio;
   try {
     studio = getStudioServer();
