@@ -1,5 +1,7 @@
 # Deployment preparation, Listing Photos Generator
 
+Update, 2026-11-18: hosting is decided for now as a subdomain of nvconsult.eu on its own server, with the container stack in `deploy/`. Read `docs/deployment-nvconsult.md` first. The placeholder text below is kept as the earlier record.
+
 Status: Phase 2 complete, verified by coordinator 2026-11-07,
 rechecked 2026-11-10. Local files only, no GitHub push. Nothing here
 is deployed. No hosting provider is chosen, no spending, no live
