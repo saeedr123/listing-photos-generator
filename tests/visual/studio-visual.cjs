@@ -17,6 +17,10 @@
 //      Also run the export and admin flows in the browser:
 //        node tests/visual/studio-visual.cjs --e2e
 //
+// Use localhost, not 127.0.0.1, against a production build: the session
+// cookie is Secure there, and the test API client sends it over plain
+// http to localhost only.
+//
 // Options: --base-url=http://localhost:3100  --shots=hero,phone-view
 //          --admin-email=...  --admin-password=...  (for --e2e)
 //
