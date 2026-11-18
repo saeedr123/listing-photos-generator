@@ -1,6 +1,6 @@
 # Deployment on a subdomain of nvconsult.eu
 
-Written 2026-11-18. Decision recorded: "we can host for now on our own site nvconsult.eu" (owner, 2026-11-18). This guide says how to do that, what was tested, and what was not.
+Written 2026-11-18. Subdomain decided the same day: `mockups.nvconsult.eu`. Vercel as the host was raised by the owner the same day and is not decided; it needs code changes first (see PROJECT_STATUS.md). Decision recorded: "we can host for now on our own site nvconsult.eu" (owner, 2026-11-18). This guide says how to do that, what was tested, and what was not.
 
 ## 1. Finding: the app cannot run inside the current nvconsult.eu website
 
@@ -122,6 +122,6 @@ The stack is fit for the owner to use it. These are still open before real selle
 
 ## 9. Owner decisions needed for this route
 
-1. The subdomain name.
+1. ~~The subdomain name.~~ Decided: `mockups.nvconsult.eu`.
 2. Which server, and whether Hostinger's own VPS is preferred.
 3. Where the nvconsult.eu website links to the app.

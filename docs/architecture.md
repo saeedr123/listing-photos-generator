@@ -679,7 +679,7 @@ What follows from it:
 - 3D rendering stays in the seller's browser (section 6.7), so the server needs no GPU.
 - Rate limits are counted in memory, so the stack runs one app container only.
 
-Open: the subdomain name, the server, and the link locations on nvconsult.eu. The Docker image has not been built yet; the start script was tested against PostgreSQL without Docker. Steps and checks: `docs/deployment-nvconsult.md`.
+Subdomain decided by the owner, 2026-11-18: `mockups.nvconsult.eu`. Open: the host (a server running `deploy/`, or Vercel, raised by the owner the same day), and the link locations on nvconsult.eu. The Docker image has not been built yet; the start script was tested against PostgreSQL without Docker. Steps and checks: `docs/deployment-nvconsult.md`.
 
 ### 12.4 Testing, export and visual
 
