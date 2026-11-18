@@ -85,3 +85,39 @@ export async function seedReferenceData(client: ReferenceSeedClient, options: Re
     templateIdBySlug: () => null,
   };
 }
+
+export interface ReferenceReadClient {
+  platform: { findUnique(args: { where: Record<string, unknown> }): Promise<Record<string, unknown> | null> };
+  platformPack: { findUnique(args: { where: Record<string, unknown> }): Promise<Record<string, unknown> | null> };
+  platformPackVersion: { findFirst(args: { where: Record<string, unknown> }): Promise<Record<string, unknown> | null> };
+}
+
+export class ReferenceDataMissingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ReferenceDataMissingError";
+  }
+}
+
+/**
+ * Read the ids written by seedReferenceData. Read only: the web app
+ * never seeds by itself, because the seed records which admin created
+ * the pack version. Run the setup script once per database instead.
+ */
+export async function loadReferenceResolution(client: ReferenceReadClient, definition: PlatformPackDefinition): Promise<PlatformResolution> {
+  const missing = (what: string) =>
+    new ReferenceDataMissingError(`The database has no ${what} yet. Run the database setup script once (npm run db:setup).`);
+  const platform = await client.platform.findUnique({ where: { slug: definition.platform_id } });
+  if (!platform) throw missing(`${definition.platform_id} platform`);
+  const pack = await client.platformPack.findUnique({ where: { platform_id_slug: { platform_id: platform["id"], slug: definition.slug } } });
+  if (!pack) throw missing(`${definition.slug} platform pack`);
+  const version = await client.platformPackVersion.findFirst({ where: { platform_pack_id: pack["id"], version_number: definition.version } });
+  if (!version) throw missing(`${definition.slug} version ${definition.version}`);
+  return {
+    platformId: String(platform["id"]),
+    packVersionId: String(version["id"]),
+    nichePackId: null,
+    nichePackVersionId: null,
+    templateIdBySlug: () => null,
+  };
+}

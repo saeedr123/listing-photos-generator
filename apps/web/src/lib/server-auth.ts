@@ -27,6 +27,9 @@
 
 import { randomUUID } from "node:crypto";
 import { AuthService } from "../../../../packages/auth/src/auth-service.ts";
+import { InMemoryAuditStore, type AuditStore } from "../../../../packages/auth/src/audit.ts";
+import { PrismaAuditStore, type PrismaAuditClient } from "../../../../packages/auth/src/prisma-audit-store.ts";
+import { getPrismaClient } from "./db";
 import { PrismaAuthProvider } from "../../../../packages/auth/src/prisma-provider.ts";
 import type {
   PrismaAuthClient,
@@ -138,6 +141,9 @@ export class InMemoryPrismaDelegate implements PrismaAuthClient {
       if (args.data.email_verified_at instanceof Date) {
         row.email_verified_at = args.data.email_verified_at;
       }
+      if (args.data.deleted_at instanceof Date) {
+        row.deleted_at = args.data.deleted_at;
+      }
       if (typeof args.data.name === "string" || args.data.name === null) {
         row.name = args.data.name as string | null;
       }
@@ -208,9 +214,23 @@ export class InMemoryPrismaDelegate implements PrismaAuthClient {
 // delegate, or over a fresh DEVELOPMENT ONLY in memory delegate when
 // none is given. Tests use this to get an isolated service per test.
 // The singleton below is the only instance server routes should use.
-export function createServerAuthService(delegate?: PrismaAuthClient): AuthService {
+export function createServerAuthService(delegate?: PrismaAuthClient, auditStore?: AuditStore): AuthService {
   const resolved = delegate ?? new InMemoryPrismaDelegate();
-  return new AuthService({ provider: new PrismaAuthProvider(resolved) });
+  return new AuthService({ provider: new PrismaAuthProvider(resolved), auditStore });
+}
+
+// The audit store the server uses: the SystemLog table when a database
+// is connected, otherwise one DEVELOPMENT ONLY in memory store shared by
+// every module copy in the process.
+const GLOBAL_AUDIT_KEY = "__lpgInMemoryAuditStore";
+
+export function sharedAuditStore(client: unknown | null): AuditStore {
+  if (client) {
+    return new PrismaAuditStore(client as PrismaAuditClient);
+  }
+  const holder = globalThis as Record<string, unknown>;
+  if (!holder[GLOBAL_AUDIT_KEY]) holder[GLOBAL_AUDIT_KEY] = new InMemoryAuditStore();
+  return holder[GLOBAL_AUDIT_KEY] as AuditStore;
 }
 
 // First admin seed, local proof only. Creates one admin user from the
@@ -243,27 +263,15 @@ export async function maybeSeedFirstAdmin(
   return true;
 }
 
-async function resolveDelegate(): Promise<{ delegate: PrismaAuthClient; mode: ServerAuthMode }> {
-  const memory = (): { delegate: PrismaAuthClient; mode: ServerAuthMode } => ({
-    delegate: new InMemoryPrismaDelegate(),
-    mode: "memory",
-  });
-  if (!process.env.DATABASE_URL) {
-    return memory();
+async function resolveDelegate(): Promise<{ delegate: PrismaAuthClient; mode: ServerAuthMode; client: unknown | null }> {
+  const client = await getPrismaClient();
+  if (client) {
+    return { delegate: client as PrismaAuthClient, mode: "prisma", client };
   }
-  try {
-    const specifier = "@prisma/client";
-    const mod = (await import(specifier)) as { PrismaClient?: new () => unknown };
-    if (typeof mod.PrismaClient !== "function") {
-      console.warn("Server auth: generated Prisma client could not be loaded, using the development only in memory delegate.");
-      return memory();
-    }
-    const client = new mod.PrismaClient();
-    return { delegate: client as unknown as PrismaAuthClient, mode: "prisma" };
-  } catch {
+  if (process.env.DATABASE_URL) {
     console.warn("Server auth: generated Prisma client could not be loaded, using the development only in memory delegate.");
-    return memory();
   }
+  return { delegate: new InMemoryPrismaDelegate(), mode: "memory", client: null };
 }
 
 let cachedService: Promise<AuthService> | null = null;
@@ -280,7 +288,14 @@ export async function getServerAuthService(): Promise<AuthService> {
     cachedService = (async () => {
       const resolved = await resolveDelegate();
       cachedMode = resolved.mode;
-      const service = createServerAuthService(resolved.delegate);
+      // Production refuses to run on the in memory store, except while
+      // Next.js builds pages (no request, no seller data) or when a local
+      // proof script opts in explicitly.
+      const building = process.env.NEXT_PHASE === "phase-production-build";
+      if (resolved.mode === "memory" && process.env.NODE_ENV === "production" && !building && process.env.LPG_ALLOW_MEMORY_STORE !== "true") {
+        throw new Error("No database is connected. Set DATABASE_URL and run the migrations. The in memory store is for development only.");
+      }
+      const service = createServerAuthService(resolved.delegate, sharedAuditStore(resolved.client));
       cachedSeeded = await maybeSeedFirstAdmin(service, resolved.delegate);
       return service;
     })();

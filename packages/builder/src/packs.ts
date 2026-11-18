@@ -82,7 +82,7 @@ export class InMemoryPackStore implements PackStore {
   }
 
   async saveExport(record: ExportRecord): Promise<void> {
-    if (!this.checks.has(record.reconciliationCheckId)) {
+    if (record.reconciliationCheckId === null || !this.checks.has(record.reconciliationCheckId)) {
       throw new Error("An export must point at a stored reconciliation check.");
     }
     const list = this.exports.get(record.listingPackId) ?? [];
