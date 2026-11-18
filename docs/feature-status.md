@@ -158,7 +158,7 @@ Not built, not verified, or waiting, in plain words:
 - nvconsult.eu itself (WordPress on Hostinger web hosting) cannot run the app. It needs a separate server reached through a subdomain. The subdomain name and the server are not chosen.
 - Billing is still a stub: every seller is on the free plan. No password reset and no email. No privacy policy or terms pages. Product files in the builder are stored as metadata only, not uploaded.
 - Rate limits are counted in one process's memory: one app container only.
-- Everything from the 2026-11-17 entry above that is not listed as built here still stands: no human visual review, no real product render, one browser only, rendering in the browser, the decisions waiting on Saeed.
+- Everything from the 2026-11-17 entry below that is not listed as built here still stands: no human visual review, no real product render, one browser only, rendering in the browser, the decisions waiting on Saeed.
 
 Decisions waiting on the owner for this work:
 1. The subdomain name on nvconsult.eu.
