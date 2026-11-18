@@ -27,6 +27,8 @@
 
 import { randomUUID } from "node:crypto";
 import { AuthService } from "../../../../packages/auth/src/auth-service.ts";
+import type { RateLimiter } from "../../../../packages/auth/src/rate-limit.ts";
+import { sharedRateLimiter } from "./rate-limits";
 import { InMemoryAuditStore, type AuditStore } from "../../../../packages/auth/src/audit.ts";
 import { PrismaAuditStore, type PrismaAuditClient } from "../../../../packages/auth/src/prisma-audit-store.ts";
 import { getPrismaClient } from "./db";
@@ -214,9 +216,9 @@ export class InMemoryPrismaDelegate implements PrismaAuthClient {
 // delegate, or over a fresh DEVELOPMENT ONLY in memory delegate when
 // none is given. Tests use this to get an isolated service per test.
 // The singleton below is the only instance server routes should use.
-export function createServerAuthService(delegate?: PrismaAuthClient, auditStore?: AuditStore): AuthService {
+export function createServerAuthService(delegate?: PrismaAuthClient, auditStore?: AuditStore, rateLimiter?: RateLimiter): AuthService {
   const resolved = delegate ?? new InMemoryPrismaDelegate();
-  return new AuthService({ provider: new PrismaAuthProvider(resolved), auditStore });
+  return new AuthService({ provider: new PrismaAuthProvider(resolved), auditStore, rateLimiter });
 }
 
 // The audit store the server uses: the SystemLog table when a database
@@ -295,7 +297,7 @@ export async function getServerAuthService(): Promise<AuthService> {
       if (resolved.mode === "memory" && process.env.NODE_ENV === "production" && !building && process.env.LPG_ALLOW_MEMORY_STORE !== "true") {
         throw new Error("No database is connected. Set DATABASE_URL and run the migrations. The in memory store is for development only.");
       }
-      const service = createServerAuthService(resolved.delegate, sharedAuditStore(resolved.client));
+      const service = createServerAuthService(resolved.delegate, sharedAuditStore(resolved.client), await sharedRateLimiter());
       cachedSeeded = await maybeSeedFirstAdmin(service, resolved.delegate);
       return service;
     })();

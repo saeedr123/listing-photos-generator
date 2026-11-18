@@ -36,10 +36,10 @@ describe("shared checks", () => {
 });
 
 describe("Prisma schema", () => {
-  it("defines the 45 tables from docs/database-design.md (with PackVersion and RefundRequest), plus SellerProfile and ReviewComment from migration 0005", () => {
+  it("defines the 45 tables from docs/database-design.md (with PackVersion and RefundRequest), plus SellerProfile and ReviewComment from migration 0005, and RateLimitHit from migration 0006", () => {
     const schema = readFileSync("prisma/schema.prisma", "utf8");
     const models = schema.match(/^model \w+ \{/gm) ?? [];
-    expect(models).toHaveLength(47);
+    expect(models).toHaveLength(48);
     for (const name of [
       "User",
       "Product",
@@ -63,6 +63,7 @@ describe("Prisma schema", () => {
       "RefundRequest",
       "SellerProfile",
       "ReviewComment",
+      "RateLimitHit",
     ]) {
       expect(schema).toContain(`model ${name} {`);
     }

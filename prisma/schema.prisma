@@ -1103,3 +1103,14 @@ model ReviewComment {
   @@index([listing_pack_id])
   @@index([share_link_id])
 }
+
+// One row per attempt counted against a rate limit, added in migration
+// 0006 for hosting with many app copies (Vercel). See
+// packages/auth/src/prisma-rate-limit-store.ts.
+model RateLimitHit {
+  id  BigInt   @id @default(autoincrement())
+  key String
+  at  DateTime @db.Timestamptz(6)
+
+  @@index([key, at])
+}

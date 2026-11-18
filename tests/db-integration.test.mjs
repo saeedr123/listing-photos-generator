@@ -30,6 +30,8 @@ const { PrismaPackStore } = await import("../packages/builder/src/prisma-pack-st
 const { seedReferenceData } = await import("../packages/builder/src/reference-seed.ts");
 const { maidOfHonorFacts } = await import("../packages/builder/src/test-product.ts");
 const { checkStudioText } = await import("../packages/builder/src/studio-text-check.ts");
+const { RateLimiter } = await import("../packages/auth/src/rate-limit.ts");
+const { PrismaRateLimitStore } = await import("../packages/auth/src/prisma-rate-limit-store.ts");
 
 const definition = JSON.parse(readFileSync(new URL("../config/platform-packs/etsy.v1.json", import.meta.url), "utf8"));
 const unique = () => randomUUID().slice(0, 8);
@@ -141,5 +143,30 @@ describe("real database", { skip: !enabled && "DATABASE_URL not set or Prisma cl
     for (const row of rows) {
       assert.ok(await prisma.reconciliationCheck.findUnique({ where: { id: row.reconciliation_check_id } }));
     }
+  });
+
+  it("rate limits are shared and exact under concurrent requests", async () => {
+    const limiter = new RateLimiter(new PrismaRateLimitStore(prisma, { sweepChance: 0 }));
+    const key = `test:${unique()}`;
+    // 20 requests at the same moment against a limit of 5: exactly 5 pass.
+    const results = await Promise.all(Array.from({ length: 20 }, () => limiter.check(key, 5, 60)));
+    assert.equal(results.filter((r) => r.allowed).length, 5);
+    const blocked = results.find((r) => !r.allowed);
+    assert.ok(blocked.retryAfterSeconds >= 1 && blocked.retryAfterSeconds <= 60);
+    // A second limiter on the same table (another app copy) sees the same count.
+    const otherClient = new PrismaClient();
+    try {
+      const other = new RateLimiter(new PrismaRateLimitStore(otherClient, { sweepChance: 0 }));
+      assert.equal((await other.check(key, 5, 60)).allowed, false);
+      await limiter.reset(key);
+      assert.equal((await other.check(key, 5, 60)).allowed, true);
+    } finally {
+      await otherClient.$disconnect();
+    }
+    // Attempts outside the window no longer count.
+    const old = `test:${unique()}`;
+    const t0 = Date.now() - 120_000;
+    for (let i = 0; i < 5; i++) await limiter.check(old, 5, 60, t0);
+    assert.equal((await limiter.check(old, 5, 60)).allowed, true);
   });
 });
