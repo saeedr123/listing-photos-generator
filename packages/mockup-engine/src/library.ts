@@ -7,8 +7,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import type { MockupDefinition } from "./types.ts";
-import { checkPremium } from "./premium.ts";
-import { licenceGate } from "./premium.ts";
+import { checkPremium, hasApprovedHumanReview, licenceGate } from "./premium.ts";
 
 export interface MockupIssue {
   code: string;
@@ -48,7 +47,15 @@ export function validateMockup(mockup: MockupDefinition): MockupIssue[] {
     fail("crisp-not-passed", `Mockup ${mockup.id}: a published mockup must pass the crisp render test.`);
   }
   const premium = checkPremium(mockup);
-  if (mockup.status === "published" && mockup.qualityLabel === "premium" && !premium.passesPremium) {
+  // The premium label is checked at every status, not only when
+  // published: a draft must not sit in admin calling itself premium.
+  if (mockup.qualityLabel === "premium" && !hasApprovedHumanReview(mockup.humanReview)) {
+    fail(
+      "premium-no-human-review",
+      `Mockup ${mockup.id} is labelled premium but has no approved human visual review sign-off. Label it basic until the review is recorded.`,
+    );
+  }
+  if (mockup.qualityLabel === "premium" && !premium.passesPremium) {
     fail("premium-check-failed", premium.message);
   }
   const licence = licenceGate(mockup);

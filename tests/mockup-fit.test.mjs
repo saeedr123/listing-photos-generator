@@ -6,8 +6,10 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  HUMAN_REVIEW_CRITERION,
   checkPremium,
   containFit,
+  hasApprovedHumanReview,
   licenceGate,
   loadMockups,
   orientationAllowed,
@@ -121,22 +123,78 @@ describe("premium quality check", () => {
     assert.ok(result.failedCriteria.length > 0);
   });
 
-  it("laptop, phone, tablet, and laptop plus phone meet the declared premium criteria", () => {
+  it("laptop, phone, tablet, and laptop plus phone are labelled basic at version 2, with honest criteria", () => {
     for (const id of ["laptop-alone", "phone-alone", "tablet-alone", "laptop-plus-phone"]) {
       const mockup = mockups.find((m) => m.id === id);
+      assert.equal(mockup.qualityLabel, "basic", id);
+      assert.equal(mockup.version, 2, id);
+      assert.equal(mockup.previousVersion, 1, id);
+      assert.match(mockup.changeNote, /relabelled from premium to basic/, id);
+      assert.equal(mockup.humanReview, null, id);
+      // A flat, unreviewed frame must not declare criteria it does not meet.
+      assert.equal(mockup.premiumCriteria.realisticPerspective, false, id);
+      assert.equal(mockup.premiumCriteria.realisticMaterialsAndEdges, false, id);
+      assert.equal(mockup.premiumCriteria.softRealisticShadows, false, id);
+      assert.equal(mockup.premiumCriteria.depth, false, id);
       const result = checkPremium(mockup);
-      assert.equal(result.passesPremium, true, id);
-      assert.equal(result.label, "premium", id);
+      assert.equal(result.passesPremium, false, id);
+      assert.equal(result.label, "basic", id);
     }
   });
 
-  it("a premium label with a missing criterion fails", () => {
+  it("no mockup in the library is labelled premium", () => {
+    for (const mockup of mockups) {
+      assert.equal(mockup.qualityLabel, "basic", mockup.id);
+    }
+  });
+
+  const allCriteria = {
+    realisticPerspective: true,
+    softRealisticShadows: true,
+    depth: true,
+    lifestyleOrDeskScene: true,
+    realisticMaterialsAndEdges: true,
+    screenCrispAtExportSize: true,
+  };
+  const signOff = {
+    reviewedBy: "Test reviewer",
+    reviewedAt: "2026-11-16",
+    approvedBy: "Test owner",
+    approvedAt: "2026-11-16",
+    decision: "approved",
+    note: "Test record only, not a real review.",
+  };
+
+  it("a mockup labelled premium without a recorded human review sign-off fails validation", () => {
     const laptop = mockups.find((m) => m.id === "laptop-alone");
-    const broken = JSON.parse(JSON.stringify(laptop));
-    broken.premiumCriteria.softRealisticShadows = false;
+    for (const status of ["draft", "preview", "published"]) {
+      for (const humanReview of [undefined, null, { ...signOff, decision: "rejected" }, { ...signOff, approvedBy: "" }]) {
+        const candidate = { ...JSON.parse(JSON.stringify(laptop)), status, qualityLabel: "premium", premiumCriteria: allCriteria, humanReview };
+        const issues = validateMockup(candidate);
+        assert.ok(issues.some((i) => i.code === "premium-no-human-review"), `${status} ${JSON.stringify(humanReview)}`);
+        const result = checkPremium(candidate);
+        assert.equal(result.passesPremium, false);
+        assert.equal(result.label, "basic");
+        assert.ok(result.failedCriteria.includes(HUMAN_REVIEW_CRITERION));
+      }
+    }
+  });
+
+  it("premium passes only with every criterion met and an approved sign-off", () => {
+    const laptop = mockups.find((m) => m.id === "laptop-alone");
+    const candidate = { ...JSON.parse(JSON.stringify(laptop)), qualityLabel: "premium", premiumCriteria: allCriteria, humanReview: signOff };
+    assert.deepEqual(validateMockup(candidate), []);
+    assert.equal(checkPremium(candidate).passesPremium, true);
+    assert.equal(hasApprovedHumanReview(signOff), true);
+  });
+
+  it("a premium label with a missing criterion fails, even with a sign-off", () => {
+    const laptop = mockups.find((m) => m.id === "laptop-alone");
+    const broken = { ...JSON.parse(JSON.stringify(laptop)), qualityLabel: "premium", premiumCriteria: { ...allCriteria, softRealisticShadows: false }, humanReview: signOff };
     const result = checkPremium(broken);
     assert.equal(result.passesPremium, false);
     assert.ok(result.failedCriteria.includes("soft realistic shadows"));
+    assert.ok(validateMockup(broken).some((i) => i.code === "premium-check-failed"));
   });
 });
 

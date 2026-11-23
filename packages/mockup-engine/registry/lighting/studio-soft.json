@@ -1,0 +1,77 @@
+{
+  "id": "studio-soft",
+  "name": "Soft studio",
+  "environment": {
+    "type": "procedural-studio",
+    "roomColour": "#D8D8D8",
+    "roomIntensity": 0.55,
+    "softboxes": [
+      {
+        "position": [
+          -1.3,
+          1.7,
+          1.3
+        ],
+        "size": [
+          1.6,
+          1.2
+        ],
+        "colour": "#FFFFFF",
+        "intensity": 7
+      },
+      {
+        "position": [
+          1.6,
+          1,
+          0.9
+        ],
+        "size": [
+          1.2,
+          1.2
+        ],
+        "colour": "#FFF6EC",
+        "intensity": 3
+      },
+      {
+        "position": [
+          0,
+          2.3,
+          0
+        ],
+        "size": [
+          2.2,
+          2.2
+        ],
+        "colour": "#FFFFFF",
+        "intensity": 3.5
+      },
+      {
+        "position": [
+          0,
+          0.9,
+          -1.9
+        ],
+        "size": [
+          2.2,
+          0.8
+        ],
+        "colour": "#EAF1FF",
+        "intensity": 2.5
+      }
+    ]
+  },
+  "environmentIntensity": 1,
+  "exposure": 1,
+  "licence": {
+    "source": "Built in house",
+    "licenceType": "own-built, owned outright",
+    "licenceDate": "2026-11-16",
+    "licenceStorageLocation": "packages/mockup-engine/registry/lighting/studio-soft.json",
+    "creator": "Listing Photos Generator, in house",
+    "notes": "A lighting rig described as numbers in this file and built at run time by the scene engine. No HDRI file is used, so there is no HDRI to licence. Built in house."
+  },
+  "version": 1,
+  "status": "published",
+  "previousVersion": null,
+  "changeNote": "First version, built in house. A procedural studio environment, not an HDRI photo."
+}

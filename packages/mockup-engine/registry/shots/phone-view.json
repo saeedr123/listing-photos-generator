@@ -1,0 +1,68 @@
+{
+  "id": "phone-view",
+  "slug": "phone-view",
+  "name": "Phone view",
+  "role": "phone-view",
+  "aspect": {
+    "w": 3,
+    "h": 2
+  },
+  "models": [
+    {
+      "modelId": "phone-generic",
+      "position": [
+        0.07,
+        0,
+        0
+      ],
+      "rotationDeg": [
+        -8,
+        -14,
+        0
+      ],
+      "scale": 1,
+      "colourOptionId": null,
+      "surfacePages": {}
+    }
+  ],
+  "camera": {
+    "position": [
+      -0.03,
+      0.105,
+      0.52
+    ],
+    "target": [
+      -0.03,
+      0.08,
+      0
+    ],
+    "fovDeg": 24
+  },
+  "lightingPresetId": "studio-soft",
+  "contactShadow": {
+    "enabled": true,
+    "opacity": 0.75,
+    "blur": 0.014,
+    "planeSizeMetres": 1.4,
+    "heightMetres": 0.3
+  },
+  "textLayout": {
+    "headline": null,
+    "bullets": {
+      "x": 50,
+      "y": 300,
+      "w": 300,
+      "h": 420,
+      "align": "left"
+    },
+    "badge": null
+  },
+  "sellerNote": "",
+  "version": 1,
+  "status": "preview",
+  "previousVersion": null,
+  "changeNote": "First version. Status is preview: docs/shot-list.md does not exist yet, so this shot is a working draft built to exercise the engine, waiting for the owner shot list and a human visual review.",
+  "createdAt": "2026-11-16",
+  "updatedAt": "2026-11-16",
+  "updatedBy": "seed"
+}

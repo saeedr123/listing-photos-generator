@@ -20,15 +20,25 @@ jobs:
         run: npm run lint
       - name: Typecheck
         run: npm run typecheck
+      # The export tests rasterize and encode JPGs with python3 and Pillow.
+      # tests/merge.test.ts (run by npm test) needs it too: without Pillow
+      # its export comes back failed.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Pillow for the export tests
+        run: python3 -m pip install --quiet pillow
       - name: Tests
         run: npm test
+      - name: Engine tests (templates, mockups, export, storage, 3D studio)
+        run: ./tests/run-tests.sh
       - name: Validate Prisma schema
         env:
           DATABASE_URL: postgresql://user:password@localhost:5432/listing_photos_generator?schema=public
         run: npm run prisma:validate
       - name: Check for em dashes and en dashes
         run: |
-          if grep -rP '\x{2014}|\x{2013}' --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.next --exclude=package-lock.json .; then
+          if LC_ALL=C.UTF-8 grep -rIP '\x{2014}|\x{2013}' --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.next --exclude=package-lock.json .; then
             echo "Em dash or en dash found in the repository. Use a hyphen or comma instead."
             exit 1
           fi

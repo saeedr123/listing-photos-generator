@@ -6,3 +6,5 @@ export * from "./icc.ts";
 export * from "./text-pack.ts";
 export * from "./errors.ts";
 export * from "./export.ts";
+export * from "./studio-gate.ts";
+export * from "./zip.ts";

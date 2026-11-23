@@ -231,6 +231,24 @@ A new mockup is only added to the live library after a crisp render test: contai
 
 Desk scene, printed planner or book, bundle of devices, seasonal backgrounds, seller uploaded custom frames, social square crop, and before and after frame, each added only after it is tested for crisp rendering and for the no stretch, no colour change rule. A printed planner or book is for sellers who also sell a printable version, clearly separated from a Sheets product, never mixed in one listing claim. A before and after frame uses only real sheet data, no invented before example. A social square crop is exported separately from the Etsy landscape set, so Etsy sizes stay consistent.
 
+### 7.6. Decision entry, 14 November 2026: 3D mockup studio. PROVISIONAL UNTIL SAEED APPROVES
+
+Status of this entry: provisional. It was added on 17 November 2026 by the engineering session that built the studio, because the 14 November direction change was not yet written into this prompt. It is not an approved scope change until Saeed approves it. If Saeed rejects or changes it, this entry is corrected and the build follows this prompt, not the other way round.
+
+What the direction change says: mockups move from flat 2D SVG frames to a 3D studio. A mockup model is a GLB file. The seller's real render is applied as a texture on a named screen or paper mesh. A shot is model(s) plus camera plus lighting plus background. A style kit holds the background colours, accent colour, fonts, badge, text slots and the ordered shot list, so one shop looks consistent. A batch turns one design plus one style kit into the ordered image set as a zip.
+
+What does not change: sections 7.1 to 7.4, section 9 and section 14 all still apply. The screen or sheet inside every mockup is the seller's real render. Contain fit, centred, no stretch, no colour change, no crop unless approved. Every asset carries a licence record. No frame is called premium without the criteria in 9.2 and Saeed's approval after a human visual review. Adobe Stock and ls.graphics are direction only. The 5 SVG frames in 7.2 stay as basic 2D fallbacks.
+
+How 7.3 reads for a 3D model: upload a GLB, name the screen mesh, set allowed orientations and camera presets, preview it with a real product render, enable it. Plus duplicate, edit, hide and roll back, with versioning.
+
+Corrections made with this entry:
+- The four device frames in 7.2 (laptop alone, phone alone, tablet alone, laptop plus phone) had been labelled premium with no human visual review. That broke 9.2. They are labelled basic from version 2, 16 November 2026.
+
+Open points this entry does not decide, see section 23:
+- Where rendering runs. The studio renders in the browser with WebGL today. Section 18 and docs/architecture.md say render and export run as background jobs. The renderer sits behind a job runner interface so either answer works. Saeed to confirm.
+- Object storage provider for uploaded GLB files and registry data. Not chosen. The build uses a storage interface with a local file adapter for development only.
+- The brand values for the style kit (colours, fonts, badge, wording, shot order) and the shot list.
+
 ## 8. REFERENCE MOCKUPS FOR THE PROOF TEMPLATES
 
 Use these references for structure only. Do not invent a new style, and do not lift another seller's product screen into a template.
@@ -587,7 +605,9 @@ These are not blockers for Phase 0 and Phase 1, but they are blockers for a comm
 - Stripe account owner, business details, and VAT treatment confirmation. Confirm the exact VAT treatment with Ali's accountant before launch. Do not invent tax rates.
 - AI provider choice and budget cap for AI credits, plus fallback provider if the primary is unavailable.
 - Domain or subdomain for the tools site, and the exact nvconsult.eu link locations. Note, 5 November 2026: the tools site domain is on hold. Do not check domain availability and do not purchase anything until Ali reopens it. Use placeholder domain configuration only.
-- Hosting provider for the web app, hosted Postgres provider, and object storage provider.
+- Hosting provider for the web app, hosted Postgres provider, and object storage provider. Note, 17 November 2026: the 3D mockup studio stores uploaded GLB files and registry records through an object storage interface, with a local file adapter for development only. No production provider is chosen or implied by that. See section 7.6.
+- Where the 3D mockup studio renders, added 17 November 2026: in the browser with WebGL as built today, or as a background job as section 18 states. Provisional, see section 7.6.
+- Style kit brand values and the shot list, added 17 November 2026: config/style-kits/modustemplates.json holds placeholder values only, and the shots are working drafts. Saeed to supply the brand choices and the shot list.
 - GitHub repository name, owner, and visibility. Decided and already live: saeedr123/listing-photos-generator, public, owner saeedr123.
 - Privacy policy, terms, and refund policy final wording, with a legal check for GDPR and consumer rights.
 - Mockup frame licensing: which premium frames are built in house, which need a licence, the licence source and type for each licensed frame, and the licence cost, with no price invented. Do not buy any licence until Ali approves it. Adobe Stock is direction and inspiration only, see section 9.3.
