@@ -7,9 +7,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { ListingPack, ReconciliationResult } from "@listing-photos-generator/builder/browser";
+import type { ListingPack, PackVersion, ReconciliationResult } from "@listing-photos-generator/builder/browser";
 import {
   clearSampleContent,
+  displayedValuesFromPack,
+  reconcilePack,
   etsyPack,
   maidOfHonorFacts,
   mockupKinds,
@@ -19,21 +21,14 @@ import {
 } from "@listing-photos-generator/builder/browser";
 import { isTitleWithinLimit, validateTags } from "@listing-photos-generator/shared";
 import { siteCopy } from "../../config/site-copy";
-import {
-  createDemoShareLink,
-  listDemoVersions,
-  requestDemoExport,
-  restoreDemoVersion,
-  runDemoReconciliation,
-  saveDemoPack,
-} from "../../lib/demo-store";
+import { createShareLinkAction, requestExportAction, restoreVersionAction, savePackAction } from "../../app/seller/actions";
 import { Alert, Badge, Button, Card, Field, inputStyle, Stepper } from "../ui";
 import { AiSuggestions } from "../ai/AiSuggestions";
 import { LivePreview } from "./LivePreview";
 
 const copy = siteCopy.builder;
 
-export function BuilderClient(props: { pack: ListingPack; userId: string }) {
+export function BuilderClient(props: { pack: ListingPack; userId: string; versions: PackVersion[] }) {
   const [pack, setPack] = useState<ListingPack>(props.pack);
   const [step, setStep] = useState(0);
   const [saveState, setSaveState] = useState("Saved");
@@ -41,7 +36,7 @@ export function BuilderClient(props: { pack: ListingPack; userId: string }) {
   const [reconciliation, setReconciliation] = useState<ReconciliationResult | null>(null);
   const [sharePath, setSharePath] = useState<string | null>(null);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
-  const [versions, setVersions] = useState(() => listDemoVersions(props.pack.id));
+  const [versions, setVersions] = useState<PackVersion[]>(props.versions);
   const firstRender = useRef(true);
 
   // Autosave, debounced. Every save appends a new version.
@@ -52,9 +47,14 @@ export function BuilderClient(props: { pack: ListingPack; userId: string }) {
     }
     setSaveState(copy.autosaveSaving);
     const timer = setTimeout(() => {
-      saveDemoPack(pack, props.userId, "Autosave, step " + (step + 1));
-      setSaveState(copy.autosaveSaved);
-      setVersions(listDemoVersions(pack.id));
+      void savePackAction(pack, "Autosave, step " + (step + 1)).then((result) => {
+        if (!result.ok) {
+          setSaveState("Not saved: " + result.message);
+          return;
+        }
+        setSaveState(copy.autosaveSaved);
+        setVersions(result.value.versions);
+      });
     }, 800);
     return () => clearTimeout(timer);
   }, [pack, step, props.userId]);
@@ -81,9 +81,11 @@ export function BuilderClient(props: { pack: ListingPack; userId: string }) {
         continue;
       }
       nextFiles.push({
-        id: "demo-file-" + nextFiles.length + "-" + Date.now(),
+        // The file is checked here and its details are saved with the
+        // pack. The file itself is not uploaded to storage yet.
+        id: "file-" + nextFiles.length + "-" + Date.now(),
         productId: pack.productId,
-        storageKey: "demo:" + file.name,
+        storageKey: "not-uploaded:" + file.name,
         fileName: file.name,
         fileType: result.detectedType ?? "unknown",
         fileSizeBytes: file.size,
@@ -130,7 +132,7 @@ export function BuilderClient(props: { pack: ListingPack; userId: string }) {
   }
 
   function runCheck() {
-    setReconciliation(runDemoReconciliation(pack));
+    setReconciliation(reconcilePack(pack.productFacts, displayedValuesFromPack(pack), pack.hasSampleContent));
   }
 
   function replaceSample() {
@@ -156,22 +158,37 @@ export function BuilderClient(props: { pack: ListingPack; userId: string }) {
     }));
   }
 
-  function doExport() {
-    const result = requestDemoExport(pack, props.userId, "full_pack");
-    setReconciliation(result.reconciliation);
-    setExportMessage(result.record.status === "queued" ? "Export queued. Download history is in the dashboard." : result.record.errorMessage ?? "Export failed.");
+  async function doExport() {
+    // Save first, so the server checks exactly what is on screen.
+    const saved = await savePackAction(pack, "Saved before export");
+    if (!saved.ok) {
+      setExportMessage(saved.message);
+      return;
+    }
+    const result = await requestExportAction(pack.id);
+    if (!result.ok) {
+      setExportMessage(result.message);
+      return;
+    }
+    setReconciliation(result.value.reconciliation);
+    setExportMessage(result.value.record.status === "queued" ? "Export queued. Download history is in the dashboard." : result.value.record.errorMessage ?? "Export failed.");
   }
 
   async function doShare() {
-    const created = await createDemoShareLink(pack.id, props.userId, "review");
-    setSharePath(created.path);
+    const created = await createShareLinkAction(pack.id, "review");
+    if (!created.ok) {
+      setExportMessage(created.message);
+      return;
+    }
+    setSharePath(created.value.path);
   }
 
-  function restore(versionNumber: number) {
-    const restored = restoreDemoVersion(pack.id, versionNumber, props.userId);
-    if (restored) {
-      setPack(restored);
-      setVersions(listDemoVersions(pack.id));
+  async function restore(versionNumber: number) {
+    const result = await restoreVersionAction(pack.id, versionNumber);
+    if (result.ok) {
+      firstRender.current = true;
+      setPack(result.value.pack);
+      setVersions(result.value.versions);
     }
   }
 
@@ -363,7 +380,10 @@ export function BuilderClient(props: { pack: ListingPack; userId: string }) {
         <Card title={copy.step6Heading}>
           <p>{copy.shareHelp}</p>
           <p>
-            <Button onClick={() => void doShare()}>{copy.shareButton}</Button>
+            <Button onClick={() => void doShare()}>{copy.shareButton}</Button>{" "}
+            <Button href={"/studio?pack=" + pack.id} variant="secondary">
+              Make listing images in the Mockup Studio
+            </Button>
           </p>
           {sharePath ? (
             <Alert tone="success">
@@ -371,7 +391,7 @@ export function BuilderClient(props: { pack: ListingPack; userId: string }) {
             </Alert>
           ) : null}
           <p>
-            <Button onClick={doExport} disabled={reconciliation !== null && !reconciliation.canExport}>
+            <Button onClick={() => void doExport()} disabled={reconciliation !== null && !reconciliation.canExport}>
               {copy.exportButton}
             </Button>
           </p>
@@ -385,7 +405,7 @@ export function BuilderClient(props: { pack: ListingPack; userId: string }) {
               {versions.map((version) => (
                 <li key={version.id}>
                   Version {version.versionNumber}: {version.note} ({version.createdAt}){" "}
-                  <Button variant="secondary" onClick={() => restore(version.versionNumber)}>
+                  <Button variant="secondary" onClick={() => void restore(version.versionNumber)}>
                     Restore
                   </Button>
                 </li>

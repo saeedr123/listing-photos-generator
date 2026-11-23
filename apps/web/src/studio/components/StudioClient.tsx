@@ -24,6 +24,7 @@ import {
 import { BrowserRenderRunner } from "../browser-runner";
 import { decodeDesignFile, type DesignPageImage } from "../engine/loaders";
 import { exportSet, gateRenderedImage, type ExportSetResult } from "../export-set";
+import { checkStudioTextAction, recordStudioExportAction, saveStudioTextAction, type StudioPackContext } from "@/app/seller/actions";
 import { compareWithReference, toReferenceRender } from "../harness";
 import { ShotViewport } from "./ShotViewport";
 
@@ -73,7 +74,12 @@ function readPixels(page: DesignPageImage, maxSide: number): { data: Uint8Clampe
   return { data: ctx.getImageData(0, 0, width, height).data, width, height };
 }
 
-export function StudioClient() {
+type StudioTextValue = StudioPackContext["studioText"];
+
+export function StudioClient(props: { packContext: StudioPackContext | null }) {
+  const pack = props.packContext;
+  const [studioText, setStudioText] = useState<StudioTextValue>(pack ? pack.studioText : { headline: "", bullets: [], badge: "" });
+  const [textState, setTextState] = useState<{ saving: boolean; message: string | null; blocked: boolean }>({ saving: false, message: null, blocked: false });
   const [data, setData] = useState<CatalogResponse | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [pages, setPages] = useState<DesignPageImage[]>([]);
@@ -115,11 +121,21 @@ export function StudioClient() {
 
   const kit = useMemo<StyleKit | null>(() => {
     if (!baseKit || !data) return null;
+    let chosen = baseKit;
     if (useDesignColours && designColours.length > 0) {
-      return buildKitVariantFromColours(baseKit, designColours, data.config.colourExtraction.variantTintAmount);
+      chosen = buildKitVariantFromColours(baseKit, designColours, data.config.colourExtraction.variantTintAmount);
     }
-    return baseKit;
-  }, [baseKit, data, designColours, useDesignColours]);
+    // Working on a pack: the seller's own text replaces the kit text. An
+    // empty slot stays empty, so placeholder wording never reaches a pack.
+    if (pack) {
+      chosen = {
+        ...chosen,
+        textSlots: { headline: studioText.headline, featureBullets: studioText.bullets },
+        badge: { ...chosen.badge, wording: studioText.badge },
+      };
+    }
+    return chosen;
+  }, [baseKit, data, designColours, useDesignColours, pack, studioText]);
 
   const plan = useMemo(() => {
     if (!data || !kit) return null;
@@ -222,6 +238,16 @@ export function StudioClient() {
   const runExport = useCallback(async () => {
     if (!plan || !data || !kit) return;
     setExportState({ busy: true, message: "Starting", error: null, result: null });
+    if (pack) {
+      // The image text is checked against the pack facts on the server first.
+      const check = await checkStudioTextAction(pack.id, studioText);
+      if (!check.ok || !check.value.canExport) {
+        const reason = check.ok ? check.value.summary : check.message;
+        await recordStudioExportAction(pack.id, studioText, 0, data.exportSettings.format, data.exportSettings.shortestSidePx);
+        setExportState({ busy: false, message: "", error: "Export stopped by the fact check. " + reason, result: null });
+        return;
+      }
+    }
     try {
       const result = await exportSet({
         plan,
@@ -232,12 +258,29 @@ export function StudioClient() {
         onProgress: (progress) =>
           setExportState((state) => ({ ...state, message: `Image ${progress.position} of ${progress.total}: ${progress.stage === "done" ? "passed the export gate" : "rendering"}` })),
       });
-      setExportState({ busy: false, message: `${plan.items.length} images exported.`, error: null, result });
       downloadBytes(result.zip, result.zipName, "application/zip");
+      let historyNote = "";
+      if (pack) {
+        const recorded = await recordStudioExportAction(pack.id, studioText, plan.items.length, data.exportSettings.format, data.exportSettings.shortestSidePx);
+        historyNote = recorded.ok ? " Recorded in the pack export history." : " The export history could not be updated: " + recorded.message;
+      }
+      setExportState({ busy: false, message: `${plan.items.length} images exported.${historyNote}`, error: null, result });
     } catch (error) {
       setExportState({ busy: false, message: "", error: error instanceof Error ? error.message : "The export failed. Your design was not changed.", result: null });
     }
-  }, [plan, data, kit, makeRunner]);
+  }, [plan, data, kit, makeRunner, pack, studioText]);
+
+  const saveText = useCallback(async () => {
+    if (!pack) return;
+    setTextState({ saving: true, message: null, blocked: false });
+    const result = await saveStudioTextAction(pack.id, studioText);
+    if (!result.ok) {
+      setTextState({ saving: false, message: result.message, blocked: true });
+      return;
+    }
+    setStudioText(result.value.text);
+    setTextState({ saving: false, message: result.value.check.canExport ? "Saved. The text matches the product facts." : result.value.check.summary, blocked: !result.value.check.canExport });
+  }, [pack, studioText]);
 
   // Test hook, used by the visual regression script. Only active with ?harness=1.
   useEffect(() => {
@@ -330,6 +373,32 @@ export function StudioClient() {
         ) : null}
         {baseKit?.isPlaceholder ? <p className="mt-3 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">{baseKit.placeholderNote}</p> : null}
       </section>
+
+      {pack ? (
+        <section className="rounded border border-slate-200 p-4" data-testid="pack-text">
+          <h2 className="text-lg font-semibold">Text on your images, for {pack.name}</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            This text appears on the images that have a text area. Leave a field empty to show no text there. Any tab count, price or format you mention is checked against the product facts before export.
+          </p>
+          {pack.hasSampleContent ? <p className="mt-2 rounded border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900">This pack still has sample content. Replace it with your real product in the builder before exporting images.</p> : null}
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <label className="text-sm">Headline
+              <input className="mt-1 block w-full rounded border border-slate-300 px-2 py-1" value={studioText.headline} maxLength={120} onChange={(event) => setStudioText((t) => ({ ...t, headline: event.target.value }))} data-testid="studio-headline" />
+            </label>
+            <label className="text-sm">Badge
+              <input className="mt-1 block w-full rounded border border-slate-300 px-2 py-1" value={studioText.badge} maxLength={40} onChange={(event) => setStudioText((t) => ({ ...t, badge: event.target.value }))} data-testid="studio-badge" />
+            </label>
+            <label className="text-sm md:col-span-2">Feature bullets, one per line (up to 6)
+              <textarea className="mt-1 block w-full rounded border border-slate-300 px-2 py-1" rows={4} value={studioText.bullets.join("\n")} onChange={(event) => setStudioText((t) => ({ ...t, bullets: event.target.value.split("\n").slice(0, 6) }))} data-testid="studio-bullets" />
+            </label>
+          </div>
+          <div className="mt-3 flex items-center gap-3">
+            <button type="button" className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-50 disabled:opacity-50" disabled={textState.saving} onClick={() => void saveText()} data-testid="studio-text-save">Save text and check it</button>
+            {textState.message ? <span className={`text-sm ${textState.blocked ? "text-red-700" : "text-emerald-800"}`} role={textState.blocked ? "alert" : "status"} data-testid="studio-text-message">{textState.message}</span> : null}
+          </div>
+          <p className="mt-2 text-xs text-slate-500"><a className="underline" href={`/builder/${pack.id}`}>Back to the pack</a></p>
+        </section>
+      ) : null}
 
       {plan ? (
         <section className="rounded border border-slate-200 p-4" data-testid="plan">

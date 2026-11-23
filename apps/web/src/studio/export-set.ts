@@ -59,7 +59,20 @@ export async function gateRenderedImage(image: RenderedImage): Promise<GateRespo
     }),
   );
   const response = await fetch("/api/studio/gate", { method: "POST", body: form });
-  const body = (await response.json()) as GateResponse;
+  // A host can refuse a large upload before the app sees it (Vercel
+  // answers 413 with a body that is not JSON). Say so plainly.
+  if (response.status === 413) {
+    const megabytes = (image.png.byteLength / (1024 * 1024)).toFixed(1);
+    throw new Error(
+      `${image.item.fileName}: the rendered image is ${megabytes} MB, larger than the host accepts in one upload. Nothing was exported. Ask an admin: the export needs a direct upload to storage for images this large.`,
+    );
+  }
+  let body: GateResponse;
+  try {
+    body = (await response.json()) as GateResponse;
+  } catch {
+    throw new Error(`${image.item.fileName}: the export gate answered with status ${response.status} and no readable result. Nothing was exported. Try again.`);
+  }
   if (!response.ok || !body.ok) {
     throw new Error([body.error ?? "The image did not pass the export gate.", body.fix ? `Fix: ${body.fix}` : ""].filter(Boolean).join(" "));
   }

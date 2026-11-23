@@ -89,6 +89,9 @@ export interface ListingPack {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  // Text the seller places on listing images in the mockup studio.
+  // Optional: older packs have none. Stored in the pack version snapshot.
+  studioText?: { headline: string; bullets: string[]; badge: string } | null;
 }
 
 export interface PackVersion {
@@ -119,6 +122,17 @@ export interface ReconciliationResult {
   checkedAt: string;
   items: ReconciliationItem[];
   canExport: boolean;
+  summary: string;
+}
+
+// A reconciliation check as stored. Every export points at one, so the
+// check that let an export through (or stopped it) is kept on record.
+export interface ReconciliationCheckRecord {
+  id: string;
+  listingPackId: string;
+  status: ReconciliationStatus;
+  checkedAt: string;
+  checkedBy: "system" | "user";
   summary: string;
 }
 

@@ -8,6 +8,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { srgbIccProfileBytes } from "../packages/export/src/srgb-icc.ts";
 import {
   ExportError,
   ICC_PROFILE_NAME,
@@ -111,8 +112,8 @@ describe("rendered image gate", () => {
 });
 
 describe("gate and encode", () => {
-  it("writes a JPG at the same size with the sRGB ICC profile in its bytes", () => {
-    const gated = gateAndEncodeRenderedImage(input(), makePng(3000, 2000));
+  it("writes a JPG at the same size with the sRGB ICC profile in its bytes", async () => {
+    const gated = await gateAndEncodeRenderedImage(input(), makePng(3000, 2000));
     assert.equal(gated.format, "jpg");
     assert.equal(gated.shortestSidePx, 2000);
     assert.equal(gated.iccProfile, ICC_PROFILE_NAME);
@@ -132,36 +133,63 @@ describe("gate and encode", () => {
     assert.ok(r < 8 && g < 8 && b > 247, probe.stdout);
   });
 
-  it("stops with a plain language error when the gate blocks, and writes nothing", () => {
-    assert.throws(
+  it("embeds exactly the profile bytes the Python template export embeds", () => {
+    const py = spawnSync("python3", ["-c", "import sys; sys.path.insert(0, sys.argv[1]); from srgb_icc import srgb_icc_profile_bytes; sys.stdout.buffer.write(srgb_icc_profile_bytes())", join(process.cwd(), "packages", "export", "src")]);
+    assert.equal(py.status, 0, String(py.stderr));
+    assert.ok(srgbIccProfileBytes().equals(py.stdout));
+  });
+
+  it("matches the earlier Pillow encoder pixel for pixel within JPG rounding", async () => {
+    const png = makePng(3000, 2000);
+    const gated = await gateAndEncodeRenderedImage(input(), png);
+    const ours = join(work, "ours.jpg");
+    const src = join(work, "src.png");
+    writeFileSync(ours, gated.bytes);
+    writeFileSync(src, png);
+    const probe = spawnSync("python3", ["-c", `
+import sys, io
+from PIL import Image, ImageChops
+src = Image.open(sys.argv[1]).convert("RGB")
+buf = io.BytesIO(); src.save(buf, "JPEG", quality=int(sys.argv[3]), subsampling=0); buf.seek(0)
+pillow = Image.open(buf).convert("RGB")
+ours = Image.open(sys.argv[2]).convert("RGB")
+diff = ImageChops.difference(pillow, ours)
+print(max(hi for lo, hi in diff.getextrema()))
+`, src, ours, String(pack.export.quality)], { encoding: "utf8" });
+    assert.equal(probe.status, 0, probe.stderr);
+    assert.ok(Number(probe.stdout.trim()) <= 4, "largest channel difference: " + probe.stdout);
+  });
+
+  it("stops with a plain language error when the gate blocks, and writes nothing", async () => {
+    await assert.rejects(
       () => gateAndEncodeRenderedImage(input({ colourChanged: true }), makePng(3000, 2000)),
       (error) => error instanceof ExportError && error.code === "quality-gate-blocked" && /colour was changed/.test(error.message),
     );
   });
 
-  it("blocks a PNG whose real size is not the size that was reported", () => {
-    assert.throws(
+  it("blocks a PNG whose real size is not the size that was reported", async () => {
+    await assert.rejects(
       () => gateAndEncodeRenderedImage(input(), makePng(1500, 1000)),
       (error) => error instanceof ExportError && /Image is 1500x1000px, expected 3000x2000px/.test(error.message),
     );
   });
 
-  it("blocks a PNG with transparent pixels", () => {
-    assert.throws(
+  it("blocks a PNG with transparent pixels", async () => {
+    await assert.rejects(
       () => gateAndEncodeRenderedImage(input(), makePng(3000, 2000, "RGBA", 128)),
       (error) => error instanceof ExportError && /transparent pixels/.test(error.message),
     );
     // Fully opaque RGBA is fine.
-    assert.equal(gateAndEncodeRenderedImage(input(), makePng(3000, 2000, "RGBA", 255)).iccProfileEmbedded, true);
+    assert.equal((await gateAndEncodeRenderedImage(input(), makePng(3000, 2000, "RGBA", 255))).iccProfileEmbedded, true);
   });
 
-  it("refuses a pack that asks for a format this encoder does not write", () => {
+  it("refuses a pack that asks for a format this encoder does not write", async () => {
     const pngPack = { ...pack, export: { ...pack.export, format: "png" } };
-    assert.throws(() => gateAndEncodeRenderedImage(input({ pack: pngPack }), makePng(3000, 2000)), /writes JPG only/);
+    await assert.rejects(() => gateAndEncodeRenderedImage(input({ pack: pngPack }), makePng(3000, 2000)), /writes JPG only/);
   });
 
-  it("refuses bytes that are not a PNG", () => {
-    assert.throws(() => gateAndEncodeRenderedImage(input(), new TextEncoder().encode("not an image")), ExportError);
+  it("refuses bytes that are not a PNG", async () => {
+    await assert.rejects(() => gateAndEncodeRenderedImage(input(), new TextEncoder().encode("not an image")), ExportError);
   });
 });
 

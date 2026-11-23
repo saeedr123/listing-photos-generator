@@ -1,18 +1,14 @@
 // Dashboard. Seller profile, saved listing packs, pack history, templates,
 // mockups, downloads, AI credits, subscription, and account settings.
-// Data comes from the demo store in this build; production wiring replaces
-// it with server reads against the database. Empty states stay honest:
-// no counts are shown until real data exists.
-
-"use client";
+// Data is read on the server for the signed in seller. Empty states stay
+// honest: no counts are shown until real data exists.
 
 import { getPlans, getSiteCopy } from "@/lib/config";
-import {
-  getDemoSession,
-  listDemoExports,
-  listDemoPacks,
-} from "@/lib/demo-store";
+import { getCurrentUser } from "@/lib/current-user";
+import { getSellerData } from "@/lib/seller-data";
 import { planConfig } from "@listing-photos-generator/builder/browser";
+
+export const dynamic = "force-dynamic";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard" },
@@ -22,12 +18,13 @@ const NAV = [
   { href: "/builder?new=1", label: "New pack" },
 ];
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
   const copy = getSiteCopy();
   const plans = getPlans();
-  const session = getDemoSession();
-  const packs = session ? listDemoPacks(session.id) : [];
-  const exports = packs.flatMap((pack) => listDemoExports(pack.id));
+  const session = await getCurrentUser();
+  const data = session ? await getSellerData() : null;
+  const packs = session && data ? await data.packs.listPacks(session.id) : [];
+  const exports = data ? (await Promise.all(packs.map((pack) => data.packs.listExports(pack.id)))).flat() : [];
   const freePlan = plans.plans.find((plan) => plan.slug === "free");
 
   if (!session) {
@@ -35,7 +32,7 @@ export default function DashboardPage() {
       <div className="mx-auto max-w-5xl px-4 py-10">
         <h1 className="text-2xl font-bold text-brand-navy">{copy.dashboard.title}</h1>
         <p className="mt-2 text-slate-600">Sign in to see your dashboard.</p>
-        <a href="/auth/login" className="mt-4 inline-block rounded bg-brand-gold px-4 py-2 text-sm font-medium text-brand-navy hover:opacity-90">
+        <a href="/auth/login?next=%2Fdashboard" className="mt-4 inline-block rounded bg-brand-gold px-4 py-2 text-sm font-medium text-brand-navy hover:opacity-90">
           Sign in
         </a>
       </div>

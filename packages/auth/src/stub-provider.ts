@@ -41,6 +41,10 @@ export interface AuthProvider {
   markEmailVerified(userId: string): Promise<void>;
   changePassword(userId: string, newPassword: string): Promise<boolean>;
   setRole(userId: string, role: Role): Promise<boolean>;
+  // Marks the account deleted. A deleted account can no longer sign in
+  // and its sessions stop resolving. The row is kept, so records that
+  // point at it (exports, audit entries) stay consistent.
+  softDeleteUser(userId: string): Promise<boolean>;
 }
 
 export interface StubProviderOptions {
@@ -196,6 +200,16 @@ export class LocalStubAuthProvider implements AuthProvider {
     }
     stored.role = role;
     stored.updatedAt = new Date().toISOString();
+    return true;
+  }
+
+  async softDeleteUser(userId: string): Promise<boolean> {
+    const stored = this.usersById.get(userId);
+    if (!stored) {
+      return false;
+    }
+    stored.deletedAt = new Date().toISOString();
+    stored.updatedAt = stored.deletedAt;
     return true;
   }
 }

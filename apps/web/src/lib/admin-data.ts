@@ -8,6 +8,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { getEtsyPack, getNichePacks, getPlans, getSiteCopy } from "./config";
+import { repoRoot } from "./repo-root";
 
 export interface AdminTemplateRow {
   id: string;
@@ -37,11 +38,6 @@ export interface AdminMockupRow {
   nichePacks: string[];
 }
 
-function repoRoot(): string {
-  // The web app runs with its working directory at apps/web, so the
-  // repo root is two levels up. This is a path, not content.
-  return join(process.cwd(), "..", "..");
-}
 
 function readJsonDir(dir: string): Record<string, unknown>[] {
   return readdirSync(dir)

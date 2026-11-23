@@ -8,6 +8,22 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Throwaway database for the integration tests only. The credentials
+    # exist only inside this CI job and protect nothing.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: lpg
+          POSTGRES_PASSWORD: lpg_ci_only
+          POSTGRES_DB: lpg_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lpg -d lpg_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,6 +48,13 @@ jobs:
         run: npm test
       - name: Engine tests (templates, mockups, export, storage, 3D studio)
         run: ./tests/run-tests.sh
+      - name: Database integration tests (real PostgreSQL)
+        env:
+          DATABASE_URL: postgresql://lpg:lpg_ci_only@localhost:5432/lpg_ci?schema=public
+        run: |
+          npx prisma generate --schema prisma/schema.prisma
+          npx prisma migrate deploy --schema prisma/schema.prisma
+          node --test tests/db-integration.test.mjs
       - name: Validate Prisma schema
         env:
           DATABASE_URL: postgresql://user:password@localhost:5432/listing_photos_generator?schema=public

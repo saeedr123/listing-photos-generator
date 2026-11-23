@@ -12,6 +12,7 @@ export type {
   ProductFacts,
   ProductFormat,
   ReconciliationItem,
+  ReconciliationCheckRecord,
   ReconciliationResult,
   ReconciliationStatus,
   ReviewComment,
@@ -26,7 +27,7 @@ export type { EtsyPackConfig, MockupKindConfig, NichePackConfig, TemplateRoleCon
 export { maidOfHonorFacts, formatPrice } from "./test-product.ts";
 export { detectTypeByMagic, validateUpload } from "./upload-validation.ts";
 export type { UploadCandidate, UploadValidation } from "./upload-validation.ts";
-export { displayedValuesFromPack, reconcilePack } from "./reconciliation.ts";
+export { displayedValuesFromPack, displayedValuesFromText, reconcilePack } from "./reconciliation.ts";
 export type { DisplayedValues } from "./reconciliation.ts";
 export { SAMPLE_MARKER, clearSampleContent, containsSampleMarker, sampleCopy, sampleFacts } from "./sample-content.ts";
 export { adminAccessRequiresReason, canAdminAccessPack, canDeletePack, canEditPack, canViewPack } from "./access-control.ts";
@@ -51,3 +52,11 @@ export { PrismaPackVersionStore } from "./pack-version-store.ts";
 export type { PackVersionClient } from "./pack-version-store.ts";
 export { createRealExportRunner } from "./export-runner.ts";
 export type { ExportRunnerResult as RealExportRunnerResult, RealExportRunnerOptions } from "./export-runner.ts";
+export { ReferenceDataMissingError, loadReferenceResolution, seedReferenceData } from "./reference-seed.ts";
+export type { PlatformPackDefinition, ReferenceReadClient, ReferenceSeedClient, ReferenceSeedOptions } from "./reference-seed.ts";
+export { PrismaShareLinkStore } from "./prisma-share-link-store.ts";
+export type { PrismaShareLinkClient } from "./prisma-share-link-store.ts";
+export { InMemorySellerProfileStore, PrismaSellerProfileStore, cleanProfileValues } from "./profile-store.ts";
+export type { PrismaSellerProfileClient, SellerProfileStore } from "./profile-store.ts";
+export { checkStudioText, studioTextAsString } from "./studio-text-check.ts";
+export type { StudioText } from "./studio-text-check.ts";

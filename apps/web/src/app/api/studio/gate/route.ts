@@ -9,10 +9,14 @@
 // This route checks them, and checks the real pixel size and transparency
 // of the PNG, but it does not re-render the scene.
 
-import { join } from "node:path";
 import { ExportError, gateAndEncodeRenderedImage, type RenderedSurfaceGateInput } from "@listing-photos-generator/export";
 import { checkSurfaceCrisp, surfaceAspectMismatch, type RenderedSurfaceReport } from "@listing-photos-generator/mockup-engine/studio";
+import { requireSellerApi } from "@/lib/studio-api-auth";
 import { getStudioServer, jsonError } from "@/lib/studio-server";
+
+// Encoding a 3000 px JPG takes well under a second; the limit leaves room
+// for a slow cold start on Vercel.
+export const maxDuration = 60;
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -29,6 +33,8 @@ interface GateMeta {
 const FILE_NAME = /^[0-9]{2}-[a-z0-9][a-z0-9-]*\.[a-z0-9]+$/;
 
 export async function POST(request: Request): Promise<Response> {
+  const access = await requireSellerApi("studio.gate");
+  if (!access.ok) return access.response;
   let studio;
   try {
     studio = getStudioServer();
@@ -81,7 +87,7 @@ export async function POST(request: Request): Promise<Response> {
   });
 
   try {
-    const gated = gateAndEncodeRenderedImage(
+    const gated = await gateAndEncodeRenderedImage(
       {
         fileName: meta.fileName,
         widthPx: meta.widthPx,
@@ -95,7 +101,6 @@ export async function POST(request: Request): Promise<Response> {
         pack: studio.pack as Parameters<typeof gateAndEncodeRenderedImage>[0]["pack"],
       },
       new Uint8Array(await file.arrayBuffer()),
-      { scriptDir: join(studio.root, "packages", "export", "src") },
     );
     return Response.json({
       ok: true,

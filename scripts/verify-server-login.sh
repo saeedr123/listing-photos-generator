@@ -100,7 +100,7 @@ trap 'kill -- -"$SERVER_PID" 2>/dev/null; rm -rf "$TMPDIR_WORK"' EXIT
 
 cd "$WEB"
 LPG_SEED_ADMIN_EMAIL="$LPG_SEED_ADMIN_EMAIL" LPG_SEED_ADMIN_PASSWORD="$LPG_SEED_ADMIN_PASSWORD" \
-  setsid npx next start -p "$PORT" >"$TMPDIR_WORK/server.log" 2>&1 < /dev/null &
+  LPG_ALLOW_MEMORY_STORE=true setsid npx next start -p "$PORT" >"$TMPDIR_WORK/server.log" 2>&1 < /dev/null &
 SERVER_PID=$!
 
 READY=0

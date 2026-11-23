@@ -16,11 +16,14 @@ import {
   type ModelRegistryEntry,
   type ModelSurface,
   type Orientation,
+  type PremiumCriteria,
+  type StyleKit,
   type ShotCamera,
   type ShotDefinition,
   type StudioIssue,
 } from "@listing-photos-generator/mockup-engine/studio";
-import { decodeDesignFile, type DesignPageImage } from "../engine/loaders";
+import { decodeDesignFile, studioAssetUrl, type DesignPageImage } from "../engine/loaders";
+import { renderShot } from "../engine/render-shot";
 import { ShotViewport } from "./ShotViewport";
 
 interface Row {
@@ -29,6 +32,23 @@ interface Row {
   versions: { version: number; status: string; changeNote: string; updatedAt: string; updatedBy: string }[];
   issues: StudioIssue[];
 }
+
+const CRITERIA: [keyof PremiumCriteria, string][] = [
+  ["realisticPerspective", "Correct perspective and proportions"],
+  ["realisticMaterialsAndEdges", "Realistic materials and edges"],
+  ["softRealisticShadows", "Soft realistic shadows"],
+  ["depth", "Depth that grounds the device in the scene"],
+  ["lifestyleOrDeskScene", "A lifestyle or desk scene"],
+  ["screenCrispAtExportSize", "Screen crisp and legible at export size"],
+];
+
+// A kit with no text, used only to render a preview thumbnail.
+const THUMBNAIL_KIT = {
+  fonts: { headline: { family: "serif", weight: 700, fileStorageKey: null, licence: null }, body: { family: "sans-serif", weight: 400, fileStorageKey: null, licence: null } },
+  badge: { style: "none", wording: "", backgroundColour: "#000000", textColour: "#FFFFFF" },
+  textColour: "#000000",
+  accentColour: "#000000",
+} as unknown as StyleKit;
 
 const START_CAMERA: ShotCamera = { position: [0.3, 0.32, 0.6], target: [0, 0.08, 0], fovDeg: 30 };
 const ORIENTATIONS: Orientation[] = ["landscape", "portrait", "square"];
@@ -86,6 +106,12 @@ export function ModelRegistryAdmin({ lighting }: { lighting: LightingPreset }) {
   const [camera, setCamera] = useState<ShotCamera>(START_CAMERA);
   const [viewportWarnings, setViewportWarnings] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [review, setReview] = useState<{ criteria: PremiumCriteria; decision: "approved" | "rejected"; approvedBy: string; note: string }>({
+    criteria: { realisticPerspective: false, softRealisticShadows: false, depth: false, lifestyleOrDeskScene: false, realisticMaterialsAndEdges: false, screenCrispAtExportSize: false },
+    decision: "approved",
+    approvedBy: "",
+    note: "",
+  });
 
   const reload = useCallback(async () => {
     const response = await fetch("/api/admin/studio/models");
@@ -213,6 +239,52 @@ export function ModelRegistryAdmin({ lighting }: { lighting: LightingPreset }) {
     }
   };
 
+  const recordReview = async () => {
+    if (!draft) return;
+    const saved = await run({ action: "review", id: draft.id, review }, "Review recorded as a new version.");
+    if (saved) setDraft(saved);
+  };
+
+  const captureThumbnail = async () => {
+    if (!draft || !previewShot || !previewEntry) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const item = {
+        position: 1,
+        shotId: previewShot.id,
+        shotVersion: 1,
+        role: "custom",
+        fileName: "01-thumbnail.png",
+        widthPx: 600,
+        heightPx: 400,
+        background: { type: "solid" as const, colour: "#ECE8E1" },
+        text: { headline: null, bullets: [], badge: null },
+        surfaces: [],
+        sellerNote: "",
+        warnings: [],
+      };
+      const rendered = await renderShot({ item, shot: previewShot, kit: THUMBNAIL_KIT, models: [previewEntry], lighting, textures: [], pages: previewPages, widthPx: 600, heightPx: 400, supersample: 2 });
+      const copy = new ArrayBuffer(rendered.png.byteLength);
+      new Uint8Array(copy).set(rendered.png);
+      const form = new FormData();
+      form.set("kind", "thumbnail");
+      form.set("file", new File([copy], `${draft.id || "model"}-thumbnail.png`, { type: "image/png" }));
+      const response = await fetch("/api/admin/studio/upload", { method: "POST", body: form });
+      const body = (await response.json()) as { ok: boolean; error?: string; storageKey: string };
+      if (!body.ok) {
+        setMessage({ tone: "error", text: body.error ?? "The thumbnail could not be stored." });
+        return;
+      }
+      setDraft({ ...draft, previewThumbnail: { storageKey: body.storageKey } });
+      setMessage({ tone: "ok", text: "Thumbnail captured. Save the model to keep it." });
+    } catch (error) {
+      setMessage({ tone: "error", text: error instanceof Error ? error.message : "The thumbnail could not be rendered." });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const enable = async () => {
     if (!draft) return;
     const saved = await run({ action: "publish", id: draft.id, changeNote: changeNote || "Enabled." }, "Enabled. The model can now be used in shots and batch export.");
@@ -247,6 +319,10 @@ export function ModelRegistryAdmin({ lighting }: { lighting: LightingPreset }) {
                 </div>
               ) : null}
             </div>
+            {row.model.previewThumbnail ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={studioAssetUrl(row.model.previewThumbnail.storageKey)} alt={`Preview of ${row.model.name}`} className="mt-2 w-48 rounded border border-slate-200" data-testid="row-thumbnail" />
+            ) : null}
             <p className="mt-1 text-slate-600">Licence: source {row.model.licence.source || "not recorded"}, type {row.model.licence.licenceType || "not recorded"}, date {row.model.licence.licenceDate || "not recorded"}, stored at {row.model.licence.licenceStorageLocation || "not recorded"}.</p>
             <p className="mt-1 text-slate-600">Human review sign-off: {hasApprovedHumanReview(row.model.humanReview) ? "recorded" : "none recorded, so this model cannot be labelled premium"}.</p>
             <p className="mt-1 text-slate-600">Latest change: {row.model.changeNote}</p>
@@ -364,6 +440,14 @@ export function ModelRegistryAdmin({ lighting }: { lighting: LightingPreset }) {
             This model shows no brand logo or trademark
           </label>
 
+          <div className="mt-2 flex items-center gap-3">
+            <button type="button" className={button} disabled={busy || !previewShot} onClick={() => void captureThumbnail()} data-testid="capture-thumbnail">Save the current view as the preview thumbnail</button>
+            {draft.previewThumbnail ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={studioAssetUrl(draft.previewThumbnail.storageKey)} alt="Preview thumbnail" className="w-32 rounded border border-slate-200" data-testid="editor-thumbnail" />
+            ) : null}
+          </div>
+
           <h4 className="mt-4 font-medium">Licence record</h4>
           <div className="mt-1 grid gap-2 md:grid-cols-2">
             {(["source", "licenceType", "licenceDate", "licenceStorageLocation", "creator", "notes"] as const).map((field) => (
@@ -371,9 +455,36 @@ export function ModelRegistryAdmin({ lighting }: { lighting: LightingPreset }) {
             ))}
           </div>
 
-          <h4 className="mt-4 font-medium">Quality label</h4>
-          <p className="text-xs text-slate-600">A model is basic unless every premium point is met and a human visual review sign-off is recorded. This screen does not offer the premium label, because no sign-off form exists yet. Record the review first.</p>
-          <p className="text-sm">Label: {draft.qualityLabel}</p>
+          <h4 className="mt-4 font-medium">Quality label and human visual review</h4>
+          <p className="text-xs text-slate-600">
+            Label now: <strong data-testid="quality-label">{draft.qualityLabel}</strong>. A model becomes premium only when a person has looked at real renders at export size, every point below is met, and the owner approves. The review is recorded under your account as the reviewer. Save the model first: the review is stored as a new version of the saved model.
+          </p>
+          {draft.humanReview ? (
+            <p className="mt-1 text-xs text-slate-600">Last review: {draft.humanReview.decision} by {draft.humanReview.reviewedBy}, approved by {draft.humanReview.approvedBy}, {draft.humanReview.reviewedAt}. {draft.humanReview.note}</p>
+          ) : null}
+          <div className="mt-2 grid gap-1 md:grid-cols-2">
+            {CRITERIA.map(([key, label]) => (
+              <label key={key} className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={review.criteria[key]} onChange={(event) => setReview((r) => ({ ...r, criteria: { ...r.criteria, [key]: event.target.checked } }))} data-testid={`criterion-${key}`} />
+                {label}
+              </label>
+            ))}
+          </div>
+          <div className="mt-2 flex flex-wrap items-end gap-3 text-sm">
+            <label>Decision
+              <select className={`${input} ml-1`} value={review.decision} onChange={(event) => setReview((r) => ({ ...r, decision: event.target.value as "approved" | "rejected" }))} data-testid="review-decision">
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </label>
+            <label>Approved by (the owner)
+              <input className={`${input} ml-1`} value={review.approvedBy} onChange={(event) => setReview((r) => ({ ...r, approvedBy: event.target.value }))} data-testid="review-approver" />
+            </label>
+          </div>
+          <label className="mt-2 block text-sm">What was reviewed, at what size, and what was seen
+            <textarea className={`${input} mt-1 block w-full`} rows={2} value={review.note} onChange={(event) => setReview((r) => ({ ...r, note: event.target.value }))} data-testid="review-note" />
+          </label>
+          <button type="button" className={`${button} mt-2`} disabled={busy || isNew || !review.approvedBy.trim() || !review.note.trim()} onClick={() => void recordReview()} data-testid="record-review">Record the review</button>
 
           <h4 className="mt-4 font-medium">5. Save and enable</h4>
           {!isNew ? <label className="mt-1 block text-sm">Change note<input className={`${input} mt-1 block w-full`} value={changeNote} onChange={(event) => setChangeNote(event.target.value)} data-testid="change-note" /></label> : null}

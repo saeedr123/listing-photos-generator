@@ -28,7 +28,7 @@
 // version was used, never a guessed prompt.
 
 import type { PackStore } from "./packs.ts";
-import type { AccountDeletionRequest, ExportRecord, ListingPack, PackVersion } from "./types.ts";
+import type { AccountDeletionRequest, ExportRecord, ListingPack, PackVersion, ReconciliationCheckRecord } from "./types.ts";
 import { builderPackToDbRows, dbRowsToBuilderPack } from "./db-adapter.ts";
 import type { PlatformResolution } from "./db-adapter.ts";
 import { PrismaPackVersionStore } from "./pack-version-store.ts";
@@ -56,6 +56,9 @@ export interface PrismaPackClient {
     create(args: { data: Record<string, unknown> }): Promise<Record<string, unknown>>;
     findMany(args: { where: Record<string, unknown>; orderBy?: Record<string, unknown> }): Promise<Record<string, unknown>[]>;
     findUnique(args: { where: Record<string, unknown> }): Promise<Record<string, unknown> | null>;
+  };
+  reconciliationCheck: {
+    create(args: { data: Record<string, unknown> }): Promise<Record<string, unknown>>;
   };
   export: {
     create(args: { data: Record<string, unknown> }): Promise<Record<string, unknown>>;
@@ -153,7 +156,7 @@ export class PrismaPackStore implements PackStore {
     const latest = versions[versions.length - 1];
     const extraTemplateIds = (latest?.snapshot?.templateIds ?? []) as string[];
     const extraMockupIds = (latest?.snapshot?.mockupIds ?? []) as string[];
-    return dbRowsToBuilderPack({
+    const pack = dbRowsToBuilderPack({
       listingPack: {
         id: String(row["id"]), user_id: String(row["user_id"]), product_id: String(row["product_id"]),
         platform_id: String(row["platform_id"]), pack_version_id: String(row["pack_version_id"]),
@@ -192,6 +195,10 @@ export class PrismaPackStore implements PackStore {
       platformSlug: this.platformSlug,
       packVersionSlug: this.packVersionSlug,
     });
+    // Studio text has no column of its own: it lives in the version snapshot.
+    const studioText = latest?.snapshot?.studioText;
+    if (pack && studioText) pack.studioText = studioText;
+    return pack;
   }
 
   async saveVersion(version: PackVersion): Promise<void> {
@@ -202,6 +209,20 @@ export class PrismaPackStore implements PackStore {
 
   async listVersions(listingPackId: string): Promise<PackVersion[]> {
     return this.packVersions.listPackVersions(listingPackId);
+  }
+
+  async saveReconciliationCheck(check: ReconciliationCheckRecord): Promise<void> {
+    await this.client.reconciliationCheck.create({
+      data: {
+        id: check.id,
+        listing_pack_id: check.listingPackId,
+        platform_id: this.resolution.platformId,
+        pack_version_id: this.resolution.packVersionId,
+        status: check.status,
+        checked_at: new Date(check.checkedAt),
+        checked_by: check.checkedBy,
+      },
+    });
   }
 
   async saveExport(record: ExportRecord): Promise<void> {
